@@ -14,14 +14,14 @@
   }
   *{box-sizing:border-box;}
   body{
-    margin:0; min-height:100vh;
+    margin:0; min-height:100dvh;
     background:
       radial-gradient(ellipse at 20% -10%, #24322650 0%, transparent 55%),
       radial-gradient(ellipse at 100% 100%, #2a1f1650 0%, transparent 50%),
       var(--bg-deep);
     color:var(--parchment); font-family:'Crimson Pro', serif;
     display:flex; flex-direction:column; align-items:center;
-    padding:32px 16px 60px;
+    padding:clamp(12px,3vh,32px) clamp(10px,3vw,16px) clamp(20px,5vh,60px);
   }
   .eyebrow{ font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.16em;
     text-transform:uppercase; color:var(--parchment-dim); margin-bottom:6px; }
@@ -74,13 +74,14 @@
     background:#00000030; border:1px solid #ffffff14; color:var(--parchment-dim); }
   .dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
 
-  .arena{ position:relative; width:min(440px, 92vw); height:250px; perspective:1400px; margin-bottom:22px; }
+  .arena{ position:relative; width:clamp(280px, 90vw, 460px); height:clamp(190px, 30vh, 260px);
+    perspective:1400px; margin-bottom:clamp(12px,3vh,22px); }
   .card{ position:absolute; inset:0; cursor:pointer; transform-style:preserve-3d;
     transition:transform .6s cubic-bezier(.2,.8,.2,1); }
   .card.flipped{ transform:rotateY(180deg); }
   .face{ position:absolute; inset:0; backface-visibility:hidden; border-radius:14px;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    padding:22px; text-align:center; border:1px solid #ffffff1a;
+    padding:clamp(14px,4vw,22px); text-align:center; border:1px solid #ffffff1a;
     box-shadow:0 20px 50px -20px #000000aa, inset 0 1px 0 #ffffff10; }
   .face.front{ background:linear-gradient(155deg, var(--bronze-2), var(--bronze-1) 70%);
     border-radius:14px 34px 14px 34px; }
@@ -92,8 +93,8 @@
     margin-top:10px; letter-spacing:.04em; }
   .back-gram{ font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--parchment-dim);
     letter-spacing:.02em; margin-bottom:8px; }
-  .back-bed{ font-size:clamp(19px,4.5vw,24px); line-height:1.35; color:var(--gold);
-    max-height:140px; overflow-y:auto; }
+  .back-bed{ font-size:clamp(17px,4vw,24px); line-height:1.35; color:var(--gold);
+    max-height:clamp(90px,20vh,140px); overflow-y:auto; }
   .back-kapitel{ font-family:'JetBrains Mono', monospace; font-size:10px; color:#ffffff55;
     margin-top:12px; }
   .hint{ position:absolute; bottom:10px; font-family:'JetBrains Mono', monospace; font-size:10px; color:#00000055; }
