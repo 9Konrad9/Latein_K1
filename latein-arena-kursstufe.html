@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Latein-Arena · Kursstufe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#161d18; --bg-panel:#1f2b22;
+    --bronze-1:#3d4a3a; --bronze-2:#5c6b4f;
+    --gold:#c9a961; --parchment:#e9e2d0; --parchment-dim:#a9a894;
+    --stage-red:#b5533c; --stage-yellow:#c9a961; --stage-green:#6b8f5c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh;
+    background:
+      radial-gradient(ellipse at 20% -10%, #24322650 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 100%, #2a1f1650 0%, transparent 50%),
+      var(--bg-deep);
+    color:var(--parchment); font-family:'Crimson Pro', serif;
+    display:flex; flex-direction:column; align-items:center;
+    padding:32px 16px 60px;
+  }
+  .eyebrow{ font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--parchment-dim); margin-bottom:6px; }
+  h1{ font-family:'Cinzel', serif; font-weight:700; font-size:clamp(24px,4vw,36px);
+    letter-spacing:.03em; margin:0 0 6px; text-align:center; }
+  .subcount{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--parchment-dim); margin-bottom:16px; }
+
+  .modtabs{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; justify-content:center; }
+  .modtab{
+    font-family:'JetBrains Mono', monospace; font-size:12px; padding:8px 16px;
+    border-radius:20px; border:1px solid #ffffff20; background:#00000030;
+    color:var(--parchment-dim); cursor:pointer; transition:all .2s;
+  }
+  .modtab.active{ background:var(--bronze-2); color:#fff; border-color:var(--bronze-2); }
+
+  .filterbar{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; justify-content:center; }
+  select{
+    font-family:'JetBrains Mono', monospace; font-size:12px; padding:8px 12px;
+    border-radius:8px; border:1px solid #ffffff20; background:#00000030; color:var(--parchment);
+  }
+  select option{ background:#1f2b22; color:var(--parchment); }
+  .worst-btn{
+    font-family:'JetBrains Mono', monospace; font-size:12px; padding:8px 12px;
+    border-radius:8px; border:1px solid var(--stage-red); background:#00000030;
+    color:var(--stage-red); cursor:pointer;
+  }
+  .worst-btn.active{ background:var(--stage-red); color:#fff; }
+
+  .stage-bar{ display:flex; gap:10px; margin-bottom:22px; font-family:'JetBrains Mono', monospace; font-size:12px; }
+  .stage-chip{ display:flex; align-items:center; gap:6px; padding:5px 10px; border-radius:20px;
+    background:#00000030; border:1px solid #ffffff14; color:var(--parchment-dim); }
+  .dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+
+  .arena{ position:relative; width:min(440px, 92vw); height:250px; perspective:1400px; margin-bottom:22px; }
+  .card{ position:absolute; inset:0; cursor:pointer; transform-style:preserve-3d;
+    transition:transform .6s cubic-bezier(.2,.8,.2,1); }
+  .card.flipped{ transform:rotateY(180deg); }
+  .face{ position:absolute; inset:0; backface-visibility:hidden; border-radius:14px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:22px; text-align:center; border:1px solid #ffffff1a;
+    box-shadow:0 20px 50px -20px #000000aa, inset 0 1px 0 #ffffff10; }
+  .face.front{ background:linear-gradient(155deg, var(--bronze-2), var(--bronze-1) 70%);
+    border-radius:14px 34px 14px 34px; }
+  .face.back{ background:linear-gradient(155deg, #2a241a, #1c1712 70%);
+    transform:rotateY(180deg); border-radius:34px 14px 34px 14px; }
+  .latin-word{ font-family:'Crimson Pro', serif; font-weight:700; font-size:clamp(24px,5vw,32px);
+    letter-spacing:.01em; color:var(--parchment); text-transform:none; }
+  .meta-tag{ font-family:'JetBrains Mono', monospace; font-size:10px; color:var(--parchment-dim);
+    margin-top:10px; letter-spacing:.04em; }
+  .back-gram{ font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--parchment-dim);
+    letter-spacing:.02em; margin-bottom:8px; }
+  .back-bed{ font-size:clamp(19px,4.5vw,24px); line-height:1.35; color:var(--gold);
+    max-height:140px; overflow-y:auto; }
+  .back-kapitel{ font-family:'JetBrains Mono', monospace; font-size:10px; color:#ffffff55;
+    margin-top:12px; }
+  .hint{ position:absolute; bottom:10px; font-family:'JetBrains Mono', monospace; font-size:10px; color:#00000055; }
+  .face.back .hint{ color:#ffffff33; }
+
+  .rate-prompt{ font-family:'Crimson Pro', serif; font-style:italic; font-size:14px;
+    color:var(--parchment-dim); margin:0 0 10px; text-align:center; }
+  .controls{ display:flex; gap:10px; margin-bottom:8px; }
+  button{ font-family:'JetBrains Mono', monospace; font-size:12px; padding:9px 16px;
+    border-radius:8px; border:1px solid #ffffff20; background:#00000030; color:var(--parchment);
+    cursor:pointer; transition:background .2s, transform .15s; }
+  button:hover{ background:#ffffff10; transform:translateY(-1px); }
+  button.again{ border-color:var(--stage-red); color:var(--stage-red); }
+  button.hard{ border-color:var(--stage-yellow); color:var(--stage-yellow); }
+  button.good{ border-color:var(--stage-green); color:var(--stage-green); }
+
+  .footer-note{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--parchment-dim);
+    margin-top:16px; text-align:center; max-width:460px; line-height:1.6; }
+  .counter{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--parchment-dim); margin-bottom:6px; }
+</style>
+</head>
+<body>
+
+  <div class="eyebrow">Latein-Arena · Kursstufe-Modul</div>
+  <h1>Vocābula K1</h1>
+  <div class="subcount" id="totalCount"></div>
+
+  <div class="modtabs">
+    <div class="modtab active" data-mod="grundwortschatz">Grundwortschatz</div>
+    <div class="modtab" data-mod="autor">Cicero: De officiis</div>
+    <div class="modtab" data-mod="autor_ovid">Ovid: Metamorphosen</div>
+  </div>
+
+  <div class="filterbar" id="filterbar">
+    <select id="waFilter">
+      <option value="alle">Alle Wortarten</option>
+      <option value="verben">Verben</option>
+      <option value="substantive">Substantive</option>
+      <option value="adjektive">Adjektive</option>
+      <option value="pronomina">Pronomina</option>
+      <option value="konjunktionen">Konjunktionen</option>
+      <option value="subjunktionen">Subjunktionen</option>
+      <option value="adverbien">Adverbien</option>
+      <option value="praepositionen">Präpositionen</option>
+      <option value="fragewoerter">Fragewörter</option>
+      <option value="zahlwoerter">Zahlwörter</option>
+    </select>
+    <select id="blockFilter">
+      <option value="alle">Alle Häufigkeitsblöcke</option>
+      <option value="1–100">1–100</option>
+<option value="101–200">101–200</option>
+<option value="201–300">201–300</option>
+<option value="301–400">301–400</option>
+<option value="401–500">401–500</option>
+<option value="501–600">501–600</option>
+<option value="601–700">601–700</option>
+<option value="701–800">701–800</option>
+<option value="801–900">801–900</option>
+<option value="901–1000">901–1000</option>
+<option value="1001–1100">1001–1100</option>
+<option value="1101–1200">1101–1200</option>
+<option value="1201–1300">1201–1300</option>
+    </select>
+    <button id="worstBtn" class="worst-btn">🔥 Worst-of-10</button>
+  </div>
+
+  <div class="stage-bar" id="stageBar"></div>
+  <div class="counter" id="counter">1 / 1</div>
+
+  <div class="arena">
+    <div class="card" id="card">
+      <div class="face front">
+        <div class="latin-word" id="latinWord">—</div>
+        <div class="meta-tag" id="wortartTag">—</div>
+        <div class="hint">antippen zum Wenden</div>
+      </div>
+      <div class="face back">
+        <div class="back-gram" id="backGram">—</div>
+        <div class="back-bed" id="backBed">—</div>
+        <div class="back-kapitel" id="backKapitel">—</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="rate-prompt" id="ratePrompt" style="visibility:hidden">Wie gut wusstest du die Antwort?</p>
+  <div class="controls" id="controls" style="visibility:hidden">
+    <button class="again" onclick="rate(0)">🔴 nochmal</button>
+    <button class="hard" onclick="rate(1)">🟡 wackelig</button>
+    <button class="good" onclick="rate(2)">🟢 sicher</button>
+  </div>
+
+  <p class="footer-note">
+    Grundwortschatz: Landesbildungsserver Baden-Württemberg (CC BY 4.0) + Kieler Wortschatz, zusammengeführt.
+    Häufigkeitsblöcke folgen der Original-Nummerierung des Kieler Wortschatzes.
+    Rote und gelbe Karten erscheinen häufiger als grüne (Leitner-Gewichtung).
+    Dein Fortschritt wird lokal in diesem Browser gespeichert (in der Claude-Vorschau nicht, dort nur pro Sitzung).
+    <br><a href="#" id="resetLink" style="color:var(--parchment-dim);">Fortschritt zurücksetzen</a>
+  </p>
+
+<script>
+  let ALL_WORDS = [];
+
+  async function loadWordData(){
+    try {
+      const res = await fetch('./wortschatz-daten.json');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      ALL_WORDS = await res.json();
+      initAfterLoad();
+    } catch (err) {
+      document.getElementById('latinWord').textContent = "⚠ Wortschatz nicht geladen";
+      document.getElementById('totalCount').textContent =
+        "wortschatz-daten.json konnte nicht geladen werden — Datei muss im selben Ordner liegen " +
+        "und über einen Webserver aufgerufen werden (nicht per Doppelklick/file://). " +
+        "Lokal z. B. mit: python3 -m http.server";
+      console.error(err);
+    }
+  }
+
+  const WA_LABELS = {
+    verben: "Verb", substantive: "Substantiv", adjektive: "Adjektiv",
+    pronomina: "Pronomen", konjunktionen: "Konjunktion", subjunktionen: "Subjunktion",
+    adverbien: "Adverb", praepositionen: "Präposition", fragewoerter: "Fragewort",
+    zahlwoerter: "Zahlwort"
+  };
+
+  let currentMod = "grundwortschatz";
+  let currentWa = "alle";
+  let currentBlock = "alle";
+  let pool = [];
+  let currentWord = null;
+  let lastWordId = null;
+  let seenCount = 0;
+  let worstMode = false;
+  let progress = {};
+  let STORAGE_KEY = "latein-arena-kursstufe-fortschritt";
+
+  // Leitner-Gewichtung: rote Karten (Stufe 0) erscheinen am häufigsten, gelbe (1-2)
+  // mittel, grüne (3-4) am seltensten -- aber nie ganz raus, damit Wissen auffrischt.
+  function stageWeight(stage){
+    if (stage === 0) return 6;
+    if (stage <= 2) return 3;
+    return 1;
+  }
+
+  function pickNext(){
+    if (pool.length === 0) return null;
+    let candidates = pool;
+    if (pool.length > 1 && lastWordId !== null){
+      const filtered = pool.filter(w => w.id !== lastWordId);
+      if (filtered.length > 0) candidates = filtered;
+    }
+    if (worstMode){
+      // Worst-of: einfache Rotation ohne Gewichtung, es sind ja schon die schlechtesten
+      return candidates[Math.floor(Math.random() * candidates.length)];
+    }
+    const totalWeight = candidates.reduce((sum, w) => sum + stageWeight(w.stage), 0);
+    let r = Math.random() * totalWeight;
+    for (const w of candidates){
+      r -= stageWeight(w.stage);
+      if (r <= 0) return w;
+    }
+    return candidates[candidates.length - 1];
+  }
+
+  function filteredByUI(){
+    return ALL_WORDS.filter(w => {
+      if (w.typ !== currentMod) return false;
+      if (currentWa !== "alle" && w.waGroup !== currentWa) return false;
+      if (currentBlock !== "alle" && w.kielBlock !== currentBlock) return false;
+      return true;
+    });
+  }
+
+  function rebuildPool(){
+    worstMode = false;
+    document.getElementById('worstBtn').textContent = "🔥 Worst-of-10";
+    document.getElementById('worstBtn').classList.remove('active');
+    pool = filteredByUI();
+    lastWordId = null;
+    seenCount = 0;
+    showCard();
+  }
+
+  function enterWorstMode(){
+    const reviewed = filteredByUI().filter(w => progress[w.id] !== undefined);
+    if (reviewed.length === 0){
+      alert("Für den aktuellen Filter gibt es noch keine geübten Wörter. Erst ein paar Karten bewerten, dann steht hier eine Worst-of-Liste bereit.");
+      return;
+    }
+    reviewed.sort((a, b) => a.stage - b.stage);
+    pool = reviewed.slice(0, 10);
+    worstMode = true;
+    document.getElementById('worstBtn').textContent = "← Zurück zum normalen Modus";
+    document.getElementById('worstBtn').classList.add('active');
+    lastWordId = null;
+    seenCount = 0;
+    showCard();
+  }
+
+  function renderStageBar(){
+    const bar = document.getElementById('stageBar');
+    const counts = [0,0,0,0,0];
+    pool.forEach(w => counts[w.stage]++);
+    const red = counts[0], yellow = counts[1]+counts[2], green = counts[3]+counts[4];
+    bar.innerHTML = `
+      <div class="stage-chip"><span class="dot" style="background:var(--stage-red)"></span>${red}</div>
+      <div class="stage-chip"><span class="dot" style="background:var(--stage-yellow)"></span>${yellow}</div>
+      <div class="stage-chip"><span class="dot" style="background:var(--stage-green)"></span>${green}</div>
+    `;
+  }
+
+  function showCard(){
+    if (pool.length === 0){
+      currentWord = null;
+      document.getElementById('latinWord').textContent = "— keine Wörter —";
+      document.getElementById('wortartTag').textContent = "";
+      document.getElementById('controls').style.visibility = 'hidden';
+      document.getElementById('ratePrompt').style.visibility = 'hidden';
+      document.getElementById('counter').textContent = "0 Wörter";
+      renderStageBar();
+      return;
+    }
+    currentWord = pickNext();
+    seenCount++;
+    document.getElementById('latinWord').textContent = currentWord.lemma;
+    document.getElementById('wortartTag').textContent = WA_LABELS[currentWord.waGroup] || currentWord.waGroup;
+    document.getElementById('backGram').textContent = currentWord.gram || "";
+    document.getElementById('backGram').style.display = (currentWord.gram && currentWord.gram !== currentWord.bed) ? 'block' : 'none';
+    document.getElementById('backBed').textContent = currentWord.bed;
+    document.getElementById('backKapitel').textContent =
+      (currentWord.typ === "autor" || currentWord.typ === "autor_ovid") ? currentWord.autorWerk : "";
+    document.getElementById('card').classList.remove('flipped');
+    document.getElementById('controls').style.visibility = 'hidden';
+    document.getElementById('ratePrompt').style.visibility = 'hidden';
+    document.getElementById('counter').textContent = worstMode
+      ? `Worst-of · ${seenCount}. Karte`
+      : `${seenCount}. Karte · ${pool.length} Wörter im Pool`;
+    renderStageBar();
+  }
+
+  document.getElementById('card').addEventListener('click', () => {
+    const card = document.getElementById('card');
+    if(!card.classList.contains('flipped') && pool.length > 0){
+      card.classList.add('flipped');
+      document.getElementById('controls').style.visibility = 'visible';
+      document.getElementById('ratePrompt').style.visibility = 'visible';
+    }
+  });
+
+  function rate(delta){
+    if (!currentWord) return;
+    if(delta === 0) currentWord.stage = 0;
+    else currentWord.stage = Math.min(4, currentWord.stage + delta);
+    progress[currentWord.id] = currentWord.stage;
+    saveProgress(progress);
+    lastWordId = currentWord.id;
+    showCard();
+  }
+
+  document.querySelectorAll('.modtab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.modtab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentMod = tab.dataset.mod;
+      document.getElementById('blockFilter').style.display = currentMod === 'grundwortschatz' ? 'inline-block' : 'none';
+      rebuildPool();
+    });
+  });
+
+  document.getElementById('waFilter').addEventListener('change', (e) => {
+    currentWa = e.target.value;
+    rebuildPool();
+  });
+  document.getElementById('blockFilter').addEventListener('change', (e) => {
+    currentBlock = e.target.value;
+    rebuildPool();
+  });
+  document.getElementById('worstBtn').addEventListener('click', () => {
+    if (worstMode) rebuildPool();
+    else enterWorstMode();
+  });
+
+  document.getElementById('resetLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    if (confirm('Wirklich den gesamten Lernfortschritt zurücksetzen?')) {
+      try { localStorage.removeItem(STORAGE_KEY); } catch(err) {}
+      ALL_WORDS.forEach(w => { w.stage = 0; progress[w.id] = 0; });
+      rebuildPool();
+    }
+  });
+
+  function initAfterLoad(){
+    function loadProgress(){
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : {};
+      } catch(e) { return {}; }
+    }
+    progress = loadProgress();
+    ALL_WORDS.forEach(w => { if (progress[w.id] !== undefined) w.stage = progress[w.id]; });
+
+    document.getElementById('totalCount').textContent =
+      `${ALL_WORDS.filter(w=>w.typ==='grundwortschatz').length} Grundwortschatz-Wörter · ${ALL_WORDS.filter(w=>w.typ==='autor').length} Cicero-Wörter · ${ALL_WORDS.filter(w=>w.typ==='autor_ovid').length} Ovid-Wörter`;
+
+    rebuildPool();
+  }
+  function saveProgress(p){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); }
+    catch(e) { /* Vorschau-Umgebung ohne localStorage: stillschweigend ignorieren */ }
+  }
+
+  loadWordData();
+</script>
+</body>
+</html>
