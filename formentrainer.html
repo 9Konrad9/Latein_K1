@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Formentrainer · Latein-Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#161d18; --bg-panel:#1f2b22;
+    --bronze-1:#3d4a3a; --bronze-2:#5c6b4f;
+    --gold:#c9a961; --parchment:#e9e2d0; --parchment-dim:#a9a894;
+    --stage-red:#b5533c; --stage-yellow:#c9a961; --stage-green:#6b8f5c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100dvh;
+    background:
+      radial-gradient(ellipse at 20% -10%, #24322650 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 100%, #2a1f1650 0%, transparent 50%),
+      var(--bg-deep);
+    color:var(--parchment); font-family:'Crimson Pro', serif;
+    display:flex; flex-direction:column; align-items:center;
+    padding:clamp(12px,3vh,32px) clamp(10px,3vw,16px) clamp(20px,5vh,60px);
+  }
+  .eyebrow{ font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--parchment-dim); margin-bottom:6px; }
+  h1{ font-family:'Cinzel', serif; font-weight:700; font-size:clamp(26px,4.5vw,44px);
+    letter-spacing:.03em; margin:0 0 6px; text-align:center; }
+  .subcount{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--parchment-dim); margin-bottom:16px; }
+
+  .modetabs{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; justify-content:center; }
+  .modetab{
+    font-family:'JetBrains Mono', monospace; font-size:12px; padding:8px 16px;
+    border-radius:20px; border:1px solid #ffffff20; background:#00000030;
+    color:var(--parchment-dim); cursor:pointer; transition:all .2s;
+  }
+  .modetab.active{ background:var(--bronze-2); color:#fff; border-color:var(--bronze-2); }
+
+  .filterbar{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; justify-content:center; max-width:720px; }
+  select{
+    font-family:'JetBrains Mono', monospace; font-size:12px; padding:8px 12px;
+    border-radius:8px; border:1px solid #ffffff20; background:#00000030; color:var(--parchment);
+  }
+  select option{ background:#1f2b22; color:var(--parchment); }
+  select:disabled{ opacity:.35; cursor:not-allowed; }
+
+  .stage-bar{ display:flex; gap:10px; margin-bottom:22px; font-family:'JetBrains Mono', monospace; font-size:12px; }
+  .stage-chip{ display:flex; align-items:center; gap:6px; padding:5px 10px; border-radius:20px;
+    background:#00000030; border:1px solid #ffffff14; color:var(--parchment-dim); }
+  .dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+
+  .arena{ position:relative; width:clamp(320px, 55vw, 720px); height:clamp(220px, 42vh, 420px);
+    perspective:1400px; margin-bottom:clamp(12px,3vh,22px); }
+  .card{ position:absolute; inset:0; cursor:pointer; transform-style:preserve-3d;
+    transition:transform .6s cubic-bezier(.2,.8,.2,1); }
+  .card.flipped{ transform:rotateY(180deg); }
+  .card.no-flip{ cursor:default; }
+  .face{ position:absolute; inset:0; backface-visibility:hidden; border-radius:14px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:clamp(14px,4vw,22px); text-align:center; border:1px solid #ffffff1a;
+    box-shadow:0 20px 50px -20px #000000aa, inset 0 1px 0 #ffffff10; }
+  .face.front{ background:linear-gradient(155deg, var(--bronze-2), var(--bronze-1) 70%);
+    border-radius:14px 34px 14px 34px; }
+  .face.back{ background:linear-gradient(155deg, #2a241a, #1c1712 70%);
+    transform:rotateY(180deg); border-radius:34px 14px 34px 14px; }
+  .latin-word{ font-family:'Crimson Pro', serif; font-weight:700; font-size:clamp(28px,4vw,48px);
+    letter-spacing:.01em; color:var(--parchment); text-transform:none; }
+  .meta-tag{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--parchment-dim);
+    margin-top:10px; letter-spacing:.04em; }
+  .back-bed{ font-size:clamp(19px,3vw,28px); line-height:1.35; color:var(--gold); }
+  .back-lemma{ font-family:'JetBrains Mono', monospace; font-size:12px; color:#ffffff55; margin-top:12px; }
+  .hint{ position:absolute; bottom:10px; font-family:'JetBrains Mono', monospace; font-size:10px; color:#00000055; }
+  .face.back .hint{ color:#ffffff33; }
+
+  /* Multiple Choice */
+  .mc-options{ display:flex; flex-direction:column; gap:10px; width:clamp(320px,55vw,720px); margin-bottom:14px; }
+  .mc-btn{
+    font-family:'Crimson Pro', serif; font-size:clamp(15px,2vw,18px); padding:14px 18px;
+    border-radius:10px; border:1px solid #ffffff20; background:#00000030; color:var(--parchment);
+    cursor:pointer; text-align:left; transition:background .15s, transform .1s, border-color .15s;
+  }
+  .mc-btn:hover{ background:#ffffff10; }
+  .mc-btn.correct{ border-color:var(--stage-green); background:#6b8f5c30; }
+  .mc-btn.wrong{ border-color:var(--stage-red); background:#b5533c30; }
+  .mc-btn:disabled{ cursor:default; }
+
+  .rate-prompt{ font-family:'Crimson Pro', serif; font-style:italic; font-size:14px;
+    color:var(--parchment-dim); margin:0 0 10px; text-align:center; }
+  .controls{ display:flex; gap:10px; margin-bottom:8px; }
+  button.rate-btn{ font-family:'JetBrains Mono', monospace; font-size:clamp(12px,1.4vw,15px);
+    padding:clamp(9px,1.2vw,13px) clamp(16px,2vw,22px);
+    border-radius:8px; border:1px solid #ffffff20; background:#00000030; color:var(--parchment);
+    cursor:pointer; transition:background .2s, transform .15s; }
+  button.rate-btn:hover{ background:#ffffff10; transform:translateY(-1px); }
+  button.again{ border-color:var(--stage-red); color:var(--stage-red); }
+  button.hard{ border-color:var(--stage-yellow); color:var(--stage-yellow); }
+  button.good{ border-color:var(--stage-green); color:var(--stage-green); }
+
+  .footer-note{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--parchment-dim);
+    margin-top:16px; text-align:center; max-width:460px; line-height:1.6; }
+  .counter{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--parchment-dim); margin-bottom:6px; }
+</style>
+</head>
+<body>
+
+  <a href="./index.html" style="align-self:flex-start; color:var(--parchment-dim); font-family:'JetBrains Mono', monospace; font-size:11px; text-decoration:none; margin-bottom:10px;">← Übersicht</a>
+  <div class="eyebrow">Latein-Arena · Formentrainer</div>
+  <h1>Formae K1</h1>
+  <div class="subcount" id="totalCount"></div>
+
+  <div class="modetabs">
+    <div class="modetab active" data-mode="mc">Multiple Choice</div>
+    <div class="modetab" data-mode="experte">Experten-Modus</div>
+  </div>
+
+  <div class="filterbar">
+    <select id="wortartFilter">
+      <option value="verben">Verben</option>
+      <option value="substantive" disabled>Substantive (bald)</option>
+      <option value="pronomina" disabled>Pronomina (bald)</option>
+      <option value="adjektive" disabled>Adjektive (bald)</option>
+    </select>
+    <select id="paradigmaFilter">
+      <option value="alle">Alle Konjugationen</option>
+      <option value="a-Konjugation">a-Konjugation</option>
+      <option value="e-Konjugation">e-Konjugation</option>
+      <option value="i-Konjugation">i-Konjugation</option>
+      <option value="konsonantische Konjugation">konsonantische Konj.</option>
+      <option value="gemischte Konjugation">gemischte Konj.</option>
+      <option value="unregelmäßig">unregelmäßige Verben</option>
+    </select>
+    <select id="genusFilter">
+      <option value="alle">Aktiv + Passiv</option>
+      <option value="Aktiv">nur Aktiv</option>
+      <option value="Passiv">nur Passiv</option>
+    </select>
+  </div>
+
+  <div class="stage-bar" id="stageBar"></div>
+  <div class="counter" id="counter">1 Formen</div>
+
+  <!-- Multiple Choice Modus -->
+  <div id="mcView">
+    <div class="arena">
+      <div class="card no-flip" id="mcCard">
+        <div class="face front" style="position:relative; transform:none;">
+          <div class="latin-word" id="mcForm">—</div>
+          <div class="meta-tag" id="mcLemma">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="mc-options" id="mcOptions"></div>
+  </div>
+
+  <!-- Experten Modus -->
+  <div id="expView" style="display:none">
+    <div class="arena">
+      <div class="card" id="expCard">
+        <div class="face front">
+          <div class="latin-word" id="expForm">—</div>
+          <div class="meta-tag" id="expLemma">—</div>
+          <div class="hint">antippen zum Wenden</div>
+        </div>
+        <div class="face back">
+          <div class="back-bed" id="expBestimmung">—</div>
+          <div class="back-lemma" id="expBausteine" style="color:var(--gold); font-family:'JetBrains Mono', monospace; font-size:12px; margin-top:8px;">—</div>
+          <div class="back-lemma" id="expLemmaBack">—</div>
+        </div>
+      </div>
+    </div>
+    <p class="rate-prompt" id="expRatePrompt" style="visibility:hidden">Wie sicher wusstest du die Bestimmung?</p>
+    <div class="controls" id="expControls" style="visibility:hidden">
+      <button class="rate-btn again" onclick="rate(0)">🔴 nochmal</button>
+      <button class="rate-btn hard" onclick="rate(1)">🟡 wackelig</button>
+      <button class="rate-btn good" onclick="rate(2)">🟢 sicher</button>
+    </div>
+  </div>
+
+  <p class="footer-note">
+    Formen-Grundlage: Buchners Grammatik-Begleiter Latein (Präsensstamm, regelmäßige Konjugationen + wichtigste Unregelmäßige).
+    Weitere Wortarten (Substantive, Pronomina, Adjektive) folgen. Fortschritt wird lokal in diesem Browser gespeichert
+    (in der Claude-Vorschau nur pro Sitzung).
+  </p>
+
+<script>
+  let VERBEN_ALLE = { regelmaessig: [], unregelmaessig: [] };
+
+  async function loadData(){
+    try {
+      const res = await fetch('./verben-alle.json');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      VERBEN_ALLE = await res.json();
+      init();
+    } catch (err) {
+      document.getElementById('mcForm').textContent = "⚠ Daten nicht geladen";
+      document.getElementById('totalCount').textContent =
+        "verben-alle.json konnte nicht geladen werden — Datei muss im selben Ordner liegen und über einen Webserver aufgerufen werden.";
+      console.error(err);
+    }
+  }
+
+  // ---------------------------------------------------------------
+  // Basis-Paradigmen der unregelmäßigen Grundverben (fest hinterlegt,
+  // NICHT herleitbar). Alle Komposita (abesse, adesse, dēferre, ...)
+  // werden daraus per Präfix-Regel erzeugt.
+  // ---------------------------------------------------------------
+  const BASIS_PARADIGMEN = {
+    esse: {
+      praes_ind: ["sum","es","est","sumus","estis","sunt"],
+      praes_konj: ["sim","sīs","sit","sīmus","sītis","sint"],
+      impf_ind: ["eram","erās","erat","erāmus","erātis","erant"],
+      impf_konj: ["essem","essēs","esset","essēmus","essētis","essent"],
+      fut1_ind: ["erō","eris","erit","erimus","eritis","erunt"],
+    },
+    posse: {
+      praes_ind: ["possum","potes","potest","possumus","potestis","possunt"],
+      praes_konj: ["possim","possīs","possit","possīmus","possītis","possint"],
+      impf_ind: ["poteram","poterās","poterat","poterāmus","poterātis","poterant"],
+      impf_konj: ["possem","possēs","posset","possēmus","possētis","possent"],
+      fut1_ind: ["poterō","poteris","poterit","poterimus","poteritis","poterunt"],
+    },
+    "īre": {
+      praes_ind: ["eō","īs","it","īmus","ītis","eunt"],
+      praes_konj: ["eam","eās","eat","eāmus","eātis","eant"],
+      impf_ind: ["ībam","ībās","ībat","ībāmus","ībātis","ībant"],
+      impf_konj: ["īrem","īrēs","īret","īrēmus","īrētis","īrent"],
+      fut1_ind: ["ībō","ībis","ībit","ībimus","ībitis","ībunt"],
+    },
+    velle: {
+      praes_ind: ["volō","vīs","vult","volumus","vultis","volunt"],
+      praes_konj: ["velim","velīs","velit","velīmus","velītis","velint"],
+      impf_ind: ["volēbam","volēbās","volēbat","volēbāmus","volēbātis","volēbant"],
+      impf_konj: ["vellem","vellēs","vellet","vellēmus","vellētis","vellent"],
+      fut1_ind: ["volam","volēs","volet","volēmus","volētis","volent"],
+    },
+    "nōlle": {
+      praes_ind: ["nōlō","nōn vīs","nōn vult","nōlumus","nōn vultis","nōlunt"],
+      praes_konj: ["nōlim","nōlīs","nōlit","nōlīmus","nōlītis","nōlint"],
+      impf_ind: ["nōlēbam","nōlēbās","nōlēbat","nōlēbāmus","nōlēbātis","nōlēbant"],
+      impf_konj: ["nōllem","nōllēs","nōllet","nōllēmus","nōllētis","nōllent"],
+      fut1_ind: ["nōlam","nōlēs","nōlet","nōlēmus","nōlētis","nōlent"],
+    },
+    "mālle": {
+      praes_ind: ["mālō","māvīs","māvult","mālumus","māvultis","mālunt"],
+      praes_konj: ["mālim","mālīs","mālit","mālīmus","mālītis","mālint"],
+      impf_ind: ["mālēbam","mālēbās","mālēbat","mālēbāmus","mālēbātis","mālēbant"],
+      impf_konj: ["māllem","māllēs","māllet","māllēmus","māllētis","māllent"],
+      fut1_ind: ["mālam","mālēs","mālet","mālēmus","mālētis","mālent"],
+    },
+    ferre: {
+      praes_ind_akt: ["ferō","fers","fert","ferimus","fertis","ferunt"],
+      praes_konj_akt: ["feram","ferās","ferat","ferāmus","ferātis","ferant"],
+      impf_ind_akt: ["ferēbam","ferēbās","ferēbat","ferēbāmus","ferēbātis","ferēbant"],
+      impf_konj_akt: ["ferrem","ferrēs","ferret","ferrēmus","ferrētis","ferrent"],
+      fut1_ind_akt: ["feram","ferēs","feret","ferēmus","ferētis","ferent"],
+      praes_ind_pass: ["feror","ferris","fertur","ferimur","feriminī","feruntur"],
+      praes_konj_pass: ["ferar","ferāris","ferātur","ferāmur","ferāminī","ferantur"],
+    },
+    "fierī": {
+      praes_ind: ["fīō","fīs","fit",null,null,"fīunt"],
+      praes_konj: ["fīam","fīās","fīat","fīāmus","fīātis","fīant"],
+      impf_ind: ["fīēbam","fīēbās","fīēbat","fīēbāmus","fīēbātis","fīēbant"],
+      impf_konj: ["fierem","fierēs","fieret","fierēmus","fierētis","fierent"],
+      fut1_ind: ["fīam","fīēs","fīet","fīēmus","fīētis","fīent"],
+    },
+  };
+  // Sonderfall prōdesse: Fugenlaut -d- nur vor vokalisch anlautenden esse-Formen
+  const PRODESSE_FORMEN = {
+    praes_ind: ["prōsum","prōdes","prōdest","prōsumus","prōdestis","prōsunt"],
+    praes_konj: ["prōsim","prōsīs","prōsit","prōsīmus","prōsītis","prōsint"],
+    impf_ind: ["prōderam","prōderās","prōderat","prōderāmus","prōderātis","prōderant"],
+    impf_konj: ["prōdessem","prōdessēs","prōdesset","prōdessēmus","prōdessētis","prōdessent"],
+    fut1_ind: ["prōderō","prōderis","prōderit","prōderimus","prōderitis","prōderunt"],
+  };
+
+  function generiereUnregelmaessigeForm(verb, tempusModus, personIdx, genus){
+    if (verb.sonderfall && verb.lemma === "prōdesse"){
+      const f = PRODESSE_FORMEN[tempusModus] ? PRODESSE_FORMEN[tempusModus][personIdx] : null;
+      if (!f) return null;
+      return {form: f, bestimmung: `${PERSON_LABEL[personIdx]}, ${TEMPUS_LABEL[tempusModus]} ${genus}`,
+              teile: [{teil:"Grundform (unregelmäßig, mit Fugenlaut)", text: f}]};
+    }
+    let basisdaten = BASIS_PARADIGMEN[verb.basis];
+    if (!basisdaten) return null;
+    let key = tempusModus;
+    if (verb.basis === "ferre"){
+      key = tempusModus + (genus === "Passiv" ? "_pass" : "_akt");
+      if (!basisdaten[key]) return null;
+    } else if (genus === "Passiv"){
+      return null; // nur ferre hat im Wortschatz relevante Passivformen unter den Komposita
+    }
+    const reihe = basisdaten[key];
+    if (!reihe) return null;
+    const basisform = reihe[personIdx];
+    if (!basisform) return null;
+    const form = verb.praefix + basisform;
+    return {
+      form,
+      bestimmung: `${PERSON_LABEL[personIdx]}, ${TEMPUS_LABEL[tempusModus]} ${genus}`,
+      teile: [
+        {teil:"Präfix", text: verb.praefix || "(kein Präfix, Grundverb)"},
+        {teil:`Grundform von "${verb.basis}"`, text: basisform}
+      ]
+    };
+  }
+
+  const TEMPUS_LABEL = {
+    praes_ind: "Präsens Indikativ", praes_konj: "Präsens Konjunktiv",
+    impf_ind: "Imperfekt Indikativ", impf_konj: "Imperfekt Konjunktiv",
+    fut1_ind: "Futur I Indikativ"
+  };
+
+  // ---------------------------------------------------------------
+  // Generische Konjugations-Engine: erzeugt Form + Bestimmung + Bausteine
+  // für JEDES Verb aus dem Grundwortschatz, ohne dass die Form vorab gespeichert ist.
+  // ---------------------------------------------------------------
+  const PERSON_LABEL = ["1. Person Singular","2. Person Singular","3. Person Singular",
+                         "1. Person Plural","2. Person Plural","3. Person Plural"];
+  const ENDUNG_AKT = {
+    praes_ind: ["ō","s","t","mus","tis","nt"],
+    praes_konj: ["m","s","t","mus","tis","nt"],
+    impf_ind: ["m","s","t","mus","tis","nt"],
+    impf_konj: ["m","s","t","mus","tis","nt"],
+  };
+  const ENDUNG_PASS = {
+    praes_ind: ["r","ris","tur","mur","minī","ntur"],
+    praes_konj: ["r","ris","tur","mur","minī","ntur"],
+    impf_ind: ["r","ris","tur","mur","minī","ntur"],
+    impf_konj: ["r","ris","tur","mur","minī","ntur"],
+  };
+  const THEMAVOKAL = { a: "ā", e: "ē", i: "ī" };
+
+  function shortenFinal(form){
+    // Latein kürzt lange Vokale im Wortauslaut vor -t / -nt / -m / -r (aber nicht vor -mus/-tur/-mur etc.,
+    // da dort ein Konsonant zwischen Vokal und r/m steht)
+    const m = form.match(/^(.*)([āēīōū])(nt|t|m|r)$/);
+    if (!m) return form;
+    const kurz = {"ā":"a","ē":"e","ī":"i","ō":"o","ū":"u"}[m[2]];
+    return m[1] + kurz + m[3];
+  }
+
+  function generiereForm(verb, tempusModus, personIdx, genus){
+    const {klasse, stamm} = verb;
+    let teile = [];
+    let form = "";
+
+    if (tempusModus === "praes_ind"){
+      if (personIdx === 0) return null; // Kontraktionsform (amō-Typ) -> Sonderfall, hier ausgelassen
+      if (klasse === "a" || klasse === "e" || klasse === "i"){
+        const voll = stamm + THEMAVOKAL[klasse];
+        teile.push({teil:"Stamm", text: voll});
+        if (klasse === "i" && personIdx === 5){
+          teile = [{teil:"Stamm", text: stamm + "i"}, {teil:"Bindevokal", text:"u"}];
+          form = stamm + "iu";
+        } else {
+          form = voll;
+        }
+      } else {
+        teile.push({teil:"Stamm", text: stamm});
+        form = stamm;
+        if (genus === "Passiv" && personIdx === 1){
+          teile.push({teil:"Bindevokal", text:"e"}); form += "e";
+        } else if (personIdx === 5){
+          const bv = klasse === "gem" ? "iu" : "u";
+          teile.push({teil:"Bindevokal", text:bv}); form += bv;
+        } else {
+          const bv = klasse === "gem" ? "i" : "i";
+          teile.push({teil:"Bindevokal", text:bv}); form += bv;
+        }
+      }
+      const end = (genus==="Passiv"?ENDUNG_PASS:ENDUNG_AKT).praes_ind[personIdx];
+      teile.push({teil:"Personalendung", text:end});
+      form += end;
+      form = shortenFinal(form);
+      return {form, bestimmung: `${PERSON_LABEL[personIdx]}, Präsens Indikativ ${genus}`, teile};
+    }
+
+    if (tempusModus === "praes_konj"){
+      let kernstamm;
+      if (klasse === "gem") kernstamm = stamm + "i";
+      else if (klasse === "e") kernstamm = stamm + "e";
+      else if (klasse === "i") kernstamm = stamm + "i";
+      else kernstamm = stamm; // a-Konj. (bereits ohne Themavokal extrahiert), kons.
+      teile.push({teil:"Stamm", text: kernstamm});
+      const kz = klasse === "a" ? "ē" : "ā";
+      teile.push({teil:"Konjunktivzeichen", text: kz});
+      const end = (genus==="Passiv"?ENDUNG_PASS:ENDUNG_AKT).praes_konj[personIdx];
+      teile.push({teil:"Personalendung", text:end});
+      form = shortenFinal(kernstamm + kz + end);
+      return {form, bestimmung: `${PERSON_LABEL[personIdx]}, Präsens Konjunktiv ${genus}`, teile};
+    }
+
+    if (tempusModus === "impf_ind"){
+      const kernstamm = klasse === "gem" ? stamm + "i" : (klasse in THEMAVOKAL ? stamm+THEMAVOKAL[klasse] : stamm);
+      teile.push({teil:"Stamm", text: kernstamm});
+      const tz = (klasse==="a"||klasse==="e") ? "bā" : "ēbā";
+      teile.push({teil:"Tempuszeichen", text: tz});
+      const end = (genus==="Passiv"?ENDUNG_PASS:ENDUNG_AKT).impf_ind[personIdx];
+      teile.push({teil:"Personalendung", text:end});
+      form = shortenFinal(kernstamm + tz + end);
+      return {form, bestimmung: `${PERSON_LABEL[personIdx]}, Imperfekt Indikativ ${genus}`, teile};
+    }
+
+    if (tempusModus === "impf_konj"){
+      const inf = (klasse==="a"||klasse==="e"||klasse==="i") ? (stamm+THEMAVOKAL[klasse]+"re") : (stamm+"ere");
+      teile.push({teil:"Infinitiv Präsens (= Tempuszeichen)", text: inf});
+      const end = (genus==="Passiv"?ENDUNG_PASS:ENDUNG_AKT).impf_konj[personIdx];
+      teile.push({teil:"Personalendung", text:end});
+      form = shortenFinal(inf + end);
+      return {form, bestimmung: `${PERSON_LABEL[personIdx]}, Imperfekt Konjunktiv ${genus}`, teile};
+    }
+
+    if (tempusModus === "fut1_ind"){
+      if (klasse === "a" || klasse === "e"){
+        const voll = stamm + THEMAVOKAL[klasse];
+        teile.push({teil:"Stamm", text: voll});
+        teile.push({teil:"Tempuszeichen", text:"b"});
+        if (personIdx === 0){
+          const end = genus==="Aktiv" ? "ō" : "or";
+          teile.push({teil:"Personalendung", text:end});
+          form = voll + "b" + end;
+        } else {
+          const bv = personIdx === 5 ? "u" : "i";
+          teile.push({teil:"Bindevokal", text: (personIdx===1&&genus==="Passiv") ? "e" : bv});
+          const end = (genus==="Passiv"?ENDUNG_PASS:ENDUNG_AKT).impf_ind[personIdx]; // gleiche Endungsreihe wie Impf.
+          teile.push({teil:"Personalendung", text:end});
+          form = voll + "b" + ((personIdx===1&&genus==="Passiv")?"e":bv) + end;
+        }
+      } else {
+        if (personIdx === 0 && genus === "Aktiv") return null; // Sonderfall (sieht wie Konj. aus)
+        const kernstamm = klasse === "gem" ? stamm + "i" : stamm;
+        teile.push({teil:"Stamm", text: kernstamm});
+        const vokalJePerson = ["a","ē","e","ē","ē","e"];
+        teile.push({teil:"Tempuszeichen (= Futur, sieht wie Konj.-Vokal aus!)", text: vokalJePerson[personIdx]});
+        const end = (genus==="Passiv"?ENDUNG_PASS:ENDUNG_AKT).impf_ind[personIdx];
+        teile.push({teil:"Personalendung", text:end});
+        form = shortenFinal(kernstamm + vokalJePerson[personIdx] + end);
+      }
+      return {form, bestimmung: `${PERSON_LABEL[personIdx]}, Futur I Indikativ ${genus}`, teile};
+    }
+    return null;
+  }
+
+  const TEMPUS_MODI = ["praes_ind","praes_konj","impf_ind","impf_konj","fut1_ind"];
+  const KLASSE_LABEL = {a:"a-Konjugation",e:"e-Konjugation",i:"i-Konjugation",
+                         kons:"konsonantische Konjugation",gem:"gemischte Konjugation"};
+
+  function zufallsItem(){
+    const nurRegelm = currentParadigma !== "alle" && currentParadigma !== "unregelmäßig";
+    const nurUnregelm = currentParadigma === "unregelmäßig";
+    let pool;
+    if (nurRegelm) pool = VERBEN_ALLE.regelmaessig.filter(v => v.klasse === REV_KLASSE_LABEL[currentParadigma]);
+    else if (nurUnregelm) pool = VERBEN_ALLE.unregelmaessig;
+    else pool = VERBEN_ALLE.regelmaessig.concat(VERBEN_ALLE.unregelmaessig);
+    if (pool.length === 0) return null;
+
+    let versuch = 0;
+    while (versuch < 15){
+      const verb = pool[Math.floor(Math.random()*pool.length)];
+      const tm = TEMPUS_MODI[Math.floor(Math.random()*TEMPUS_MODI.length)];
+      const genus = (currentGenus==="alle") ? (Math.random()<0.5?"Aktiv":"Passiv") : currentGenus;
+      const personIdx = Math.floor(Math.random()*6);
+      const istRegelmaessig = verb.klasse !== undefined;
+      const res = istRegelmaessig
+        ? generiereForm(verb, tm, personIdx, genus)
+        : generiereUnregelmaessigeForm(verb, tm, personIdx, genus);
+      if (res){
+        return {
+          id: `${verb.lemma}_${tm}_${personIdx}_${genus}`,
+          lemma: verb.lemma, bedeutung: verb.bedeutung,
+          paradigma: istRegelmaessig ? KLASSE_LABEL[verb.klasse] : "unregelmäßig",
+          form: res.form, bestimmung: res.bestimmung, bausteine: res.teile,
+          kategorie: {genus}, typ: "finit"
+        };
+      }
+      versuch++;
+    }
+    return null;
+  }
+  const REV_KLASSE_LABEL = {"a-Konjugation":"a","e-Konjugation":"e","i-Konjugation":"i",
+                             "konsonantische Konjugation":"kons","gemischte Konjugation":"gem"};
+
+  let currentMode = "mc";
+  let currentParadigma = "alle";
+  let currentGenus = "alle";
+  let currentItem = null;
+  let lastItemId = null;
+  let seenCount = 0;
+  let progress = {};
+  const STORAGE_KEY = "formentrainer-fortschritt";
+
+  function rebuildPool(){
+    lastItemId = null;
+    seenCount = 0;
+    const anzahl = currentParadigma === "unregelmäßig" ? VERBEN_ALLE.unregelmaessig.length
+      : currentParadigma === "alle" ? VERBEN_ALLE.regelmaessig.length + VERBEN_ALLE.unregelmaessig.length
+      : VERBEN_ALLE.regelmaessig.filter(v=>v.klasse===REV_KLASSE_LABEL[currentParadigma]).length;
+    document.getElementById('counter').textContent = `${anzahl} Verben · Formen werden live erzeugt`;
+    nextItem();
+  }
+
+  function pickNext(){
+    let versuch = 0, item = null;
+    while (versuch < 10){
+      item = zufallsItem();
+      if (item && item.id !== lastItemId) break;
+      versuch++;
+    }
+    if (item) item.stage = progress[item.id] !== undefined ? progress[item.id] : 0;
+    return item;
+  }
+
+  function renderStageBar(){
+    const bar = document.getElementById('stageBar');
+    bar.innerHTML = `<div class="stage-chip">generativ — Fortschritt wird pro Form gespeichert, kein fester Balken</div>`;
+  }
+
+  function buildDistractors(item){
+    const alternativen = new Set();
+    let versuch = 0;
+    while (alternativen.size < 3 && versuch < 20){
+      const alt = zufallsItem();
+      if (alt && alt.bestimmung !== item.bestimmung) alternativen.add(alt.bestimmung);
+      versuch++;
+    }
+    return Array.from(alternativen).slice(0,3);
+  }
+
+  function nextItem(){
+    currentItem = pickNext();
+    if (!currentItem){
+      document.getElementById('mcForm').textContent = "— keine Formen für diese Filterkombination —";
+      document.getElementById('expForm').textContent = "— keine Formen für diese Filterkombination —";
+      return;
+    }
+    seenCount++;
+    renderStageBar();
+    if (currentMode === "mc") renderMC();
+    else renderExperte();
+  }
+
+  function renderMC(){
+    document.getElementById('mcForm').textContent = currentItem.form;
+    document.getElementById('mcLemma').textContent = `${currentItem.lemma} · ${currentItem.paradigma}`;
+    const options = buildDistractors(currentItem);
+    options.push(currentItem.bestimmung);
+    options.sort(() => Math.random()-0.5);
+    const box = document.getElementById('mcOptions');
+    box.innerHTML = '';
+    options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'mc-btn';
+      btn.textContent = opt;
+      btn.onclick = () => handleMCAnswer(btn, opt);
+      box.appendChild(btn);
+    });
+  }
+
+  function handleMCAnswer(btn, chosen){
+    const correct = chosen === currentItem.bestimmung;
+    document.querySelectorAll('.mc-btn').forEach(b => {
+      b.disabled = true;
+      if (b.textContent === currentItem.bestimmung) b.classList.add('correct');
+      else if (b === btn && !correct) b.classList.add('wrong');
+    });
+    currentItem.stage = correct ? Math.min(4, currentItem.stage + 1) : 0;
+    progress[currentItem.id] = currentItem.stage;
+    saveProgress();
+    lastItemId = currentItem.id;
+    setTimeout(nextItem, correct ? 700 : 1400);
+  }
+
+  function renderExperte(){
+    document.getElementById('expForm').textContent = currentItem.form;
+    document.getElementById('expLemma').textContent = `${currentItem.lemma} · ${currentItem.paradigma}`;
+    document.getElementById('expBestimmung').textContent = currentItem.bestimmung;
+    if (currentItem.bausteine && currentItem.bausteine.length){
+      document.getElementById('expBausteine').textContent =
+        currentItem.bausteine.map(p => `${p.text} (${p.teil})`).join(' + ');
+    } else {
+      document.getElementById('expBausteine').textContent = '';
+    }
+    document.getElementById('expLemmaBack').textContent = `${currentItem.lemma} — ${currentItem.bedeutung}`;
+    document.getElementById('expCard').classList.remove('flipped');
+    document.getElementById('expControls').style.visibility = 'hidden';
+    document.getElementById('expRatePrompt').style.visibility = 'hidden';
+  }
+
+  document.getElementById('expCard').addEventListener('click', () => {
+    const card = document.getElementById('expCard');
+    if (!card.classList.contains('flipped') && currentItem){
+      card.classList.add('flipped');
+      document.getElementById('expControls').style.visibility = 'visible';
+      document.getElementById('expRatePrompt').style.visibility = 'visible';
+    }
+  });
+
+  function rate(delta){
+    if (!currentItem) return;
+    if (delta === 0) currentItem.stage = 0;
+    else currentItem.stage = Math.min(4, currentItem.stage + delta);
+    progress[currentItem.id] = currentItem.stage;
+    saveProgress();
+    lastItemId = currentItem.id;
+    nextItem();
+  }
+
+  function saveProgress(){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch(e) {}
+  }
+  function loadProgress(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch(e) { return {}; }
+  }
+
+  document.querySelectorAll('.modetab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.modetab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentMode = tab.dataset.mode;
+      document.getElementById('mcView').style.display = currentMode === 'mc' ? 'block' : 'none';
+      document.getElementById('expView').style.display = currentMode === 'experte' ? 'block' : 'none';
+      nextItem();
+    });
+  });
+
+  document.getElementById('paradigmaFilter').addEventListener('change', e => {
+    currentParadigma = e.target.value;
+    rebuildPool();
+  });
+  document.getElementById('genusFilter').addEventListener('change', e => {
+    currentGenus = e.target.value;
+    rebuildPool();
+  });
+
+  function init(){
+    progress = loadProgress();
+    document.getElementById('totalCount').textContent =
+      `${VERBEN_ALLE.regelmaessig.length} regelmäßige + ${VERBEN_ALLE.unregelmaessig.length} unregelmäßige Verben — alle Formen live generiert`;
+    rebuildPool();
+  }
+
+  loadData();
+</script>
+</body>
+</html>
