@@ -135,6 +135,11 @@
       <option value="Aktiv">nur Aktiv</option>
       <option value="Passiv">nur Passiv</option>
     </select>
+    <select id="profilFilter" title="Häufigkeitsverteilung der Zeitformen">
+      <option value="ausgewogen">Ausgewogen</option>
+      <option value="seneca">Seneca (viel Präsens)</option>
+      <option value="ovid">Ovid (viel Perfekt/Imperfekt)</option>
+    </select>
   </div>
 
   <div class="stage-bar" id="stageBar"></div>
@@ -540,6 +545,28 @@
   const KLASSE_LABEL = {a:"a-Konjugation",e:"e-Konjugation",i:"i-Konjugation",
                          kons:"konsonantische Konjugation",gem:"gemischte Konjugation"};
 
+  // Gewichtungsprofile, hergeleitet aus einer Handauszählung realer Texte
+  // (Seneca epist. 1-5, Ovid Met. 1,1-243) -- siehe Chat für Details.
+  const GEWICHTUNGSPROFILE = {
+    ausgewogen: {praes_ind:2, praes_konj:2, impf_ind:2, impf_konj:2, fut1_ind:2,
+                 perf_ind:2, perf_konj:2, pqpf_ind:2, pqpf_konj:2},
+    seneca:     {praes_ind:5, praes_konj:3, impf_ind:1, impf_konj:1, fut1_ind:2,
+                 perf_ind:1, perf_konj:1, pqpf_ind:1, pqpf_konj:1},
+    ovid:       {praes_ind:1, praes_konj:1, impf_ind:4, impf_konj:1, fut1_ind:1,
+                 perf_ind:5, perf_konj:1, pqpf_ind:2, pqpf_konj:1},
+  };
+
+  function gewichteteZufallsTempusModus(){
+    const gewichte = GEWICHTUNGSPROFILE[currentProfil] || GEWICHTUNGSPROFILE.ausgewogen;
+    const gesamt = TEMPUS_MODI.reduce((s,tm) => s + gewichte[tm], 0);
+    let r = Math.random() * gesamt;
+    for (const tm of TEMPUS_MODI){
+      r -= gewichte[tm];
+      if (r <= 0) return tm;
+    }
+    return TEMPUS_MODI[TEMPUS_MODI.length - 1];
+  }
+
   function zufallsItem(){
     const nurRegelm = currentParadigma !== "alle" && currentParadigma !== "unregelmäßig";
     const nurUnregelm = currentParadigma === "unregelmäßig";
@@ -552,7 +579,7 @@
     let versuch = 0;
     while (versuch < 15){
       const verb = pool[Math.floor(Math.random()*pool.length)];
-      const tm = TEMPUS_MODI[Math.floor(Math.random()*TEMPUS_MODI.length)];
+      const tm = gewichteteZufallsTempusModus();
       const genus = (currentGenus==="alle") ? (Math.random()<0.5?"Aktiv":"Passiv") : currentGenus;
       const personIdx = Math.floor(Math.random()*6);
       const istRegelmaessig = verb.klasse !== undefined;
@@ -577,6 +604,7 @@
 
   let currentMode = "mc";
   let currentParadigma = "alle";
+  let currentProfil = "ausgewogen";
   let currentGenus = "alle";
   let currentItem = null;
   let lastItemId = null;
@@ -727,6 +755,10 @@
   });
   document.getElementById('genusFilter').addEventListener('change', e => {
     currentGenus = e.target.value;
+    rebuildPool();
+  });
+  document.getElementById('profilFilter').addEventListener('change', e => {
+    currentProfil = e.target.value;
     rebuildPool();
   });
 
