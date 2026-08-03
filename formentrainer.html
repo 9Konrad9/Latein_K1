@@ -403,12 +403,72 @@
     }
 
     if (tempusModus === "impf_konj"){
-      const inf = (klasse==="a"||klasse==="e"||klasse==="i") ? (stamm+THEMAVOKAL[klasse]+"re") : (stamm+"ere");
-      teile.push({teil:"Infinitiv Präsens (= Tempuszeichen)", text: inf});
+      const inf = (klasse==="a"||klasse==="e"||klasse==="i") ? (stamm+THEMAVOKAL[klasse]+"rē") : (stamm+"erē");
+      teile.push({teil:"Infinitiv Präsens (= Tempuszeichen, durchgehend lang)", text: inf});
       const end = (genus==="Passiv"?ENDUNG_PASS:ENDUNG_AKT).impf_konj[personIdx];
       teile.push({teil:"Personalendung", text:end});
-      form = shortenFinal(inf + end);
+      form = shortenFinal(inf + end); // Kürzung gilt auch hier (vor t/nt/m/r), betrifft -s-Endung (2.Sg.) aber nicht
       return {form, bestimmung: `${PERSON_LABEL[personIdx]}, Imperfekt Konjunktiv ${genus}`, teile};
+    }
+
+    // --- PERFEKTSTAMM-SYSTEM (Perfekt, Plusquamperfekt — Futur II bewusst ausgelassen) ---
+    // --- PERFEKTSTAMM PASSIV: PPP (maskulin) + Form von esse ---
+    if ((tempusModus === "perf_ind" || tempusModus === "perf_konj" ||
+         tempusModus === "pqpf_ind" || tempusModus === "pqpf_konj") && genus === "Passiv"){
+      if (!verb.ppp) return null; // kein PPP vorhanden (v.a. intransitive Verben)
+      const pppMask = verb.ppp.endsWith("um") ? verb.ppp.slice(0,-2) + "us" : verb.ppp;
+      const esseReihe = {
+        perf_ind: BASIS_PARADIGMEN.esse.praes_ind,
+        perf_konj: BASIS_PARADIGMEN.esse.praes_konj,
+        pqpf_ind: BASIS_PARADIGMEN.esse.impf_ind,
+        pqpf_konj: BASIS_PARADIGMEN.esse.impf_konj,
+      }[tempusModus];
+      const esseForm = esseReihe[personIdx];
+      teile.push({teil:"PPP (Partizip Perfekt Passiv, maskulin)", text: pppMask});
+      teile.push({teil:"Form von esse", text: esseForm});
+      form = pppMask + " " + esseForm;
+      const label = {perf_ind:"Perfekt Indikativ", perf_konj:"Perfekt Konjunktiv",
+                     pqpf_ind:"Plusquamperfekt Indikativ", pqpf_konj:"Plusquamperfekt Konjunktiv"}[tempusModus];
+      return {form, bestimmung: `${PERSON_LABEL[personIdx]}, ${label} Passiv`, teile};
+    }
+
+    if (tempusModus === "perf_ind"){
+      if (!verb.perfektstamm) return null; // Semideponens/Unpersönlich: hier nicht abgedeckt
+      teile.push({teil:"Perfektstamm", text: verb.perfektstamm});
+      const end = ["ī","istī","it","imus","istis","ērunt"][personIdx];
+      teile.push({teil:"Personalendung (Perfekt)", text: end});
+      form = verb.perfektstamm + end;
+      return {form, bestimmung: `${PERSON_LABEL[personIdx]}, Perfekt Indikativ Aktiv`, teile};
+    }
+
+    if (tempusModus === "perf_konj"){
+      if (!verb.perfektstamm) return null;
+      teile.push({teil:"Perfektstamm", text: verb.perfektstamm});
+      teile.push({teil:"Tempuszeichen", text:"er"});
+      const end = ["im","īs","it","īmus","ītis","int"][personIdx];
+      teile.push({teil:"Personalendung", text: end});
+      form = verb.perfektstamm + "er" + end;
+      return {form, bestimmung: `${PERSON_LABEL[personIdx]}, Perfekt Konjunktiv Aktiv`, teile};
+    }
+
+    if (tempusModus === "pqpf_ind"){
+      if (!verb.perfektstamm) return null;
+      teile.push({teil:"Perfektstamm", text: verb.perfektstamm});
+      teile.push({teil:"Tempuszeichen", text:"erā"});
+      const end = ["m","s","t","mus","tis","nt"][personIdx];
+      teile.push({teil:"Personalendung", text: end});
+      form = shortenFinal(verb.perfektstamm + "erā" + end);
+      return {form, bestimmung: `${PERSON_LABEL[personIdx]}, Plusquamperfekt Indikativ Aktiv`, teile};
+    }
+
+    if (tempusModus === "pqpf_konj"){
+      if (!verb.perfektstamm) return null;
+      const inf = verb.perfektstamm + "issē"; // Perfekt-Infinitiv (amāvisse) + Personalendungen, durchgehend lang
+      teile.push({teil:"Perfekt-Infinitiv (= Tempuszeichen)", text: inf});
+      const end = ["m","s","t","mus","tis","nt"][personIdx];
+      teile.push({teil:"Personalendung", text: end});
+      form = shortenFinal(inf + end);
+      return {form, bestimmung: `${PERSON_LABEL[personIdx]}, Plusquamperfekt Konjunktiv Aktiv`, teile};
     }
 
     if (tempusModus === "fut1_ind"){
@@ -439,10 +499,44 @@
       }
       return {form, bestimmung: `${PERSON_LABEL[personIdx]}, Futur I Indikativ ${genus}`, teile};
     }
+
+    // --- PERFEKTSTAMM-SYSTEM (Perfekt, Plusquamperfekt — kein Futur II, nicht mehr Schulstoff) ---
+    if (tempusModus === "perf_ind" || tempusModus === "perf_konj" ||
+        tempusModus === "plusqu_ind" || tempusModus === "plusqu_konj"){
+      if (genus === "Passiv" || !verb.perfektstamm) return null; // Passiv/Sonderfälle hier ausgeklammert
+      const pstamm = verb.perfektstamm;
+      if (tempusModus === "perf_ind"){
+        const end = ["ī","istī","it","imus","istis","ērunt"][personIdx];
+        teile.push({teil:"Perfektstamm", text: pstamm});
+        teile.push({teil:"Personalendung (Perfekt)", text: end});
+        return {form: pstamm+end, bestimmung: `${PERSON_LABEL[personIdx]}, Perfekt Indikativ Aktiv`, teile};
+      }
+      if (tempusModus === "perf_konj"){
+        const end = ["erim","erīs","erit","erīmus","erītis","erint"][personIdx];
+        teile.push({teil:"Perfektstamm", text: pstamm});
+        teile.push({teil:"Personalendung (Perfekt Konj., wie sim/sīs/sit von esse)", text: end});
+        return {form: pstamm+end, bestimmung: `${PERSON_LABEL[personIdx]}, Perfekt Konjunktiv Aktiv`, teile};
+      }
+      if (tempusModus === "plusqu_ind"){
+        teile.push({teil:"Perfektstamm", text: pstamm});
+        teile.push({teil:"Tempuszeichen (wie Imperfekt von esse)", text:"erā"});
+        const end = ["m","s","t","mus","tis","nt"][personIdx];
+        teile.push({teil:"Personalendung", text:end});
+        return {form: shortenFinal(pstamm+"erā"+end), bestimmung: `${PERSON_LABEL[personIdx]}, Plusquamperfekt Indikativ Aktiv`, teile};
+      }
+      if (tempusModus === "plusqu_konj"){
+        teile.push({teil:"Perfektstamm", text: pstamm});
+        teile.push({teil:"Tempuszeichen (= Infinitiv Perfekt: Perfektstamm + isse)", text:"isse"});
+        const end = ["m","s","t","mus","tis","nt"][personIdx];
+        teile.push({teil:"Personalendung", text:end});
+        return {form: pstamm+"isse"+end, bestimmung: `${PERSON_LABEL[personIdx]}, Plusquamperfekt Konjunktiv Aktiv`, teile};
+      }
+    }
     return null;
   }
 
-  const TEMPUS_MODI = ["praes_ind","praes_konj","impf_ind","impf_konj","fut1_ind"];
+  const TEMPUS_MODI = ["praes_ind","praes_konj","impf_ind","impf_konj","fut1_ind",
+                        "perf_ind","perf_konj","pqpf_ind","pqpf_konj"];
   const KLASSE_LABEL = {a:"a-Konjugation",e:"e-Konjugation",i:"i-Konjugation",
                          kons:"konsonantische Konjugation",gem:"gemischte Konjugation"};
 
