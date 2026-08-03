@@ -29,6 +29,25 @@
     letter-spacing:.03em; margin:0 0 6px; text-align:center; }
   .subcount{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--parchment-dim); margin-bottom:16px; }
 
+  .daily-goal{
+    display:flex; align-items:center; gap:10px; margin-bottom:16px;
+    width:clamp(320px, 55vw, 720px); flex-wrap:wrap; justify-content:center;
+  }
+  .daily-goal-text{
+    font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--parchment-dim);
+    white-space:nowrap;
+  }
+  .daily-goal-bar{
+    flex:1; min-width:120px; height:8px; border-radius:4px; background:#00000040;
+    overflow:hidden; border:1px solid #ffffff14;
+  }
+  .daily-goal-fill{
+    height:100%; background:linear-gradient(90deg, var(--stage-red), var(--stage-yellow), var(--stage-green));
+    transition:width .4s ease;
+  }
+  .daily-goal.reached .daily-goal-text{ color:var(--stage-green); }
+  #goalSelect{ font-size:10px; padding:4px 8px; }
+
   .modetabs{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; justify-content:center; }
   .modetab{
     font-family:'JetBrains Mono', monospace; font-size:12px; padding:8px 16px;
@@ -108,6 +127,17 @@
   <div class="eyebrow">Latein-Arena · Formentrainer</div>
   <h1>Formae K1</h1>
   <div class="subcount" id="totalCount"></div>
+
+  <div class="daily-goal" id="dailyGoal">
+    <div class="daily-goal-text" id="dailyGoalText">Heute: 0 / 20 Formen</div>
+    <div class="daily-goal-bar"><div class="daily-goal-fill" id="dailyGoalFill" style="width:0%"></div></div>
+    <select id="goalSelect" title="Tagesziel anpassen">
+      <option value="10">Ziel: 10/Tag</option>
+      <option value="20" selected>Ziel: 20/Tag</option>
+      <option value="30">Ziel: 30/Tag</option>
+      <option value="50">Ziel: 50/Tag</option>
+    </select>
+  </div>
 
   <div class="modetabs">
     <div class="modetab active" data-mode="mc">Multiple Choice</div>
@@ -612,6 +642,45 @@
   let progress = {};
   const STORAGE_KEY = "formentrainer-fortschritt";
 
+  // --- Tagesziel (gleiches Prinzip wie im Wortschatz-Trainer) ---
+  const DAILY_KEY = "formentrainer-tagesstatistik";
+  let dailyStats = { date: "", count: 0, goal: 20 };
+
+  function todayStr(){
+    const d = new Date();
+    return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+  }
+  function loadDailyStats(){
+    try {
+      const raw = localStorage.getItem(DAILY_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (parsed && parsed.date === todayStr()) return parsed;
+      return { date: todayStr(), count: 0, goal: parsed ? parsed.goal : 20 };
+    } catch(e) { return { date: todayStr(), count: 0, goal: 20 }; }
+  }
+  function saveDailyStats(){
+    try { localStorage.setItem(DAILY_KEY, JSON.stringify(dailyStats)); } catch(e) {}
+  }
+  function renderDailyGoal(){
+    const pct = Math.min(100, Math.round((dailyStats.count / dailyStats.goal) * 100));
+    document.getElementById('dailyGoalFill').style.width = pct + '%';
+    const box = document.getElementById('dailyGoal');
+    if (dailyStats.count >= dailyStats.goal){
+      box.classList.add('reached');
+      document.getElementById('dailyGoalText').textContent =
+        `🎉 Tagesziel erreicht: ${dailyStats.count} / ${dailyStats.goal} Formen`;
+    } else {
+      box.classList.remove('reached');
+      document.getElementById('dailyGoalText').textContent =
+        `Heute: ${dailyStats.count} / ${dailyStats.goal} Formen`;
+    }
+  }
+  document.getElementById('goalSelect').addEventListener('change', (e) => {
+    dailyStats.goal = parseInt(e.target.value, 10);
+    saveDailyStats();
+    renderDailyGoal();
+  });
+
   function rebuildPool(){
     lastItemId = null;
     seenCount = 0;
@@ -635,7 +704,20 @@
 
   function renderStageBar(){
     const bar = document.getElementById('stageBar');
-    bar.innerHTML = `<div class="stage-chip">generativ — Fortschritt wird pro Form gespeichert, kein fester Balken</div>`;
+    const stages = Object.values(progress);
+    if (stages.length === 0){
+      bar.innerHTML = `<div class="stage-chip">Noch keine Formen geübt — leg los!</div>`;
+      return;
+    }
+    const red = stages.filter(s => s === 0).length;
+    const yellow = stages.filter(s => s === 1 || s === 2).length;
+    const green = stages.filter(s => s === 3 || s === 4).length;
+    bar.innerHTML = `
+      <div class="stage-chip"><span class="dot" style="background:var(--stage-red)"></span>${red}</div>
+      <div class="stage-chip"><span class="dot" style="background:var(--stage-yellow)"></span>${yellow}</div>
+      <div class="stage-chip"><span class="dot" style="background:var(--stage-green)"></span>${green}</div>
+      <div class="stage-chip">${stages.length} insgesamt geübt</div>
+    `;
   }
 
   function buildDistractors(item){
@@ -689,6 +771,10 @@
     currentItem.stage = correct ? Math.min(4, currentItem.stage + 1) : 0;
     progress[currentItem.id] = currentItem.stage;
     saveProgress();
+    dailyStats.count++;
+    saveDailyStats();
+    renderDailyGoal();
+    renderStageBar();
     lastItemId = currentItem.id;
     setTimeout(nextItem, correct ? 700 : 1400);
   }
@@ -724,6 +810,9 @@
     else currentItem.stage = Math.min(4, currentItem.stage + delta);
     progress[currentItem.id] = currentItem.stage;
     saveProgress();
+    dailyStats.count++;
+    saveDailyStats();
+    renderDailyGoal();
     lastItemId = currentItem.id;
     nextItem();
   }
@@ -764,6 +853,9 @@
 
   function init(){
     progress = loadProgress();
+    dailyStats = loadDailyStats();
+    document.getElementById('goalSelect').value = String(dailyStats.goal);
+    renderDailyGoal();
     document.getElementById('totalCount').textContent =
       `${VERBEN_ALLE.regelmaessig.length} regelmäßige + ${VERBEN_ALLE.unregelmaessig.length} unregelmäßige Verben — alle Formen live generiert`;
     rebuildPool();
