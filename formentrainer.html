@@ -94,6 +94,38 @@
 
   /* Multiple Choice */
   .mc-options{ display:flex; flex-direction:column; gap:10px; width:clamp(320px,55vw,720px); margin-bottom:14px; }
+
+  .membra-slots{
+    display:flex; flex-wrap:wrap; gap:8px; justify-content:center;
+    width:clamp(320px,55vw,720px); min-height:56px; margin-bottom:18px;
+  }
+  .membra-slot{
+    min-width:70px; padding:10px 14px; border-radius:8px;
+    border:2px dashed #ffffff30; background:#00000020;
+    font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--parchment-dim);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    transition:border-color .2s, background .2s;
+  }
+  .membra-slot .slot-text{ font-family:'Crimson Pro', serif; font-size:17px; color:var(--parchment); }
+  .membra-slot .slot-label{ font-size:9px; letter-spacing:.03em; opacity:.8; }
+  .membra-slot.filled{ border-style:solid; border-color:var(--stage-green); background:#6b8f5c25; }
+
+  .membra-bank{
+    display:flex; flex-wrap:wrap; gap:10px; justify-content:center;
+    width:clamp(320px,55vw,720px); margin-bottom:16px;
+  }
+  .membra-chip{
+    font-family:'Crimson Pro', serif; font-size:18px; padding:10px 18px;
+    border-radius:20px; border:1px solid #ffffff30; background:#00000030; color:var(--parchment);
+    cursor:pointer; transition:background .15s, transform .1s, opacity .2s;
+  }
+  .membra-chip:hover{ background:#ffffff15; transform:translateY(-1px); }
+  .membra-chip.used{ opacity:0; pointer-events:none; }
+  .membra-chip.shake{ animation:shake .3s; border-color:var(--stage-red); }
+  @keyframes shake{
+    0%,100%{ transform:translateX(0); } 25%{ transform:translateX(-5px); }
+    75%{ transform:translateX(5px); }
+  }
   .mc-btn{
     font-family:'Crimson Pro', serif; font-size:clamp(15px,2vw,18px); padding:14px 18px;
     border-radius:10px; border:1px solid #ffffff20; background:#00000030; color:var(--parchment);
@@ -142,6 +174,7 @@
   <div class="modetabs">
     <div class="modetab active" data-mode="mc">Multiple Choice</div>
     <div class="modetab" data-mode="experte">Experten-Modus</div>
+    <div class="modetab" data-mode="membra">Membra</div>
   </div>
 
   <div class="filterbar">
@@ -209,6 +242,27 @@
       <button class="rate-btn again" onclick="rate(0)">🔴 nochmal</button>
       <button class="rate-btn hard" onclick="rate(1)">🟡 wackelig</button>
       <button class="rate-btn good" onclick="rate(2)">🟢 sicher</button>
+    </div>
+  </div>
+
+  <!-- Membra: Formen in Bausteine zerlegen -->
+  <div id="membraView" style="display:none">
+    <div class="arena" style="height:clamp(160px,26vh,220px);">
+      <div class="card no-flip" id="membraCard">
+        <div class="face front" style="position:relative; transform:none;">
+          <div class="latin-word" id="membraForm">—</div>
+          <div class="meta-tag" id="membraLemma">—</div>
+        </div>
+      </div>
+    </div>
+    <p class="rate-prompt" id="membraFrage" style="visibility:visible">Tippe die Bausteine in der richtigen Reihenfolge an — vom Wortanfang zum Wortende.</p>
+    <div class="membra-slots" id="membraSlots"></div>
+    <div class="membra-bank" id="membraBank"></div>
+    <p class="rate-prompt" id="membraRatePrompt" style="visibility:hidden">Wie sicher wusstest du die Zerlegung?</p>
+    <div class="controls" id="membraControls" style="visibility:hidden">
+      <button class="rate-btn again" onclick="membraRate(0)">🔴 nochmal</button>
+      <button class="rate-btn hard" onclick="membraRate(1)">🟡 wackelig</button>
+      <button class="rate-btn good" onclick="membraRate(2)">🟢 sicher</button>
     </div>
   </div>
 
@@ -741,6 +795,7 @@
     seenCount++;
     renderStageBar();
     if (currentMode === "mc") renderMC();
+    else if (currentMode === "membra") renderMembra();
     else renderExperte();
   }
 
@@ -795,6 +850,156 @@
     document.getElementById('expRatePrompt').style.visibility = 'hidden';
   }
 
+  // --- Membra: Puzzle-Modus ---
+  let membraKorrekt = [];   // erwartete Reihenfolge der Bausteine (Text)
+  let membraNaechster = 0;  // Index des als nächstes zu tippenden Bausteins
+  let membraTeile = [];     // Baustein-Objekte (für die Labels beim Einsetzen)
+
+  // Distraktor-Pools, gezielt für die klassischen Verwechslungsfallen
+  const DISTRAKTOR_POOLS = {
+    "Personalendung": ["ō","s","t","mus","tis","nt","m","r","ris","tur","mur","minī","ntur","or"],
+    "Personalendung (Perfekt)": ["ī","istī","it","imus","istis","ērunt"],
+    "Tempuszeichen": ["bā","b","ēbā","erā","er","a","ē","e"],
+    "Bindevokal": ["i","u","e","iu"],
+    "Konjunktivzeichen": ["a","ē","e"],
+  };
+  function findePool(teilLabel){
+    for (const key of Object.keys(DISTRAKTOR_POOLS)){
+      if (teilLabel.startsWith(key)) return DISTRAKTOR_POOLS[key];
+    }
+    return null;
+  }
+  function distraktorFuer(teilLabel, korrekterText, vermeiden){
+    const pool = findePool(teilLabel);
+    if (!pool) return null;
+    const kandidaten = pool.filter(x => x !== korrekterText && !vermeiden.includes(x));
+    if (kandidaten.length === 0) return null;
+    return kandidaten[Math.floor(Math.random() * kandidaten.length)];
+  }
+
+  // Falsch-Segmentierungs-Distraktoren: dieselbe Form, aber an falscher Stelle zerschnitten
+  // (z.B. "amāb-" statt "amā-" + "-bā-") -- trainiert das Erkennen der Grenze selbst.
+  function falschSegmentiert(form, offsets, vermeiden){
+    if (offsets.length < 3) return []; // braucht mind. eine innere Grenze zum Verschieben
+    const innereGrenzen = offsets.slice(1, -1); // alle Grenzen außer Wortanfang/-ende
+    const idx = Math.floor(Math.random() * innereGrenzen.length);
+    const original = innereGrenzen[idx];
+    const verschiebungen = [-2,-1,1,2].filter(d => {
+      const neu = original + d;
+      return neu > offsets[idx] + 0 && neu < offsets[idx+2] && neu !== original;
+    });
+    if (verschiebungen.length === 0) return [];
+    const delta = verschiebungen[Math.floor(Math.random()*verschiebungen.length)];
+    const neueGrenze = original + delta;
+    const teilA = form.slice(offsets[idx], neueGrenze);
+    const teilB = form.slice(neueGrenze, offsets[idx+2]);
+    return [teilA, teilB].filter(t => t.length > 0 && !vermeiden.includes(t));
+  }
+
+  function renderMembra(){
+    document.getElementById('membraForm').textContent = currentItem.form;
+    document.getElementById('membraLemma').textContent = `${currentItem.lemma} · ${currentItem.paradigma} · ${currentItem.bestimmung}`;
+
+    const teile = (currentItem.bausteine && currentItem.bausteine.length) ? currentItem.bausteine : null;
+    if (!teile){
+      document.getElementById('membraSlots').innerHTML = '<div class="membra-slot">— keine Zerlegung verfügbar für diese Form —</div>';
+      document.getElementById('membraBank').innerHTML = '';
+      return;
+    }
+
+    const istEinWort = !currentItem.form.includes(" ");
+
+    // Grenzen (Zeichen-Offsets) aus den Bausteinlängen ableiten, dann die ECHTEN Teilstrings
+    // aus der tatsächlich angezeigten Form schneiden (berücksichtigt automatisch die
+    // Vokalkürzung im Auslaut, die die reinen Baustein-Texte nicht immer zeigen).
+    let korrekteTexte;
+    let offsets = null;
+    if (istEinWort){
+      offsets = [0];
+      teile.forEach(p => offsets.push(offsets[offsets.length-1] + p.text.length));
+      if (offsets[offsets.length-1] === currentItem.form.length){
+        korrekteTexte = teile.map((p, i) => currentItem.form.slice(offsets[i], offsets[i+1]));
+      } else {
+        korrekteTexte = teile.map(p => p.text); // Sicherheitsfallback, falls Längen nicht exakt aufgehen
+        offsets = null;
+      }
+    } else {
+      korrekteTexte = teile.map(p => p.text); // mehrteilige Formen (PPP + esse) nicht zeichenweise zerschneiden
+    }
+
+    membraKorrekt = korrekteTexte;
+    membraNaechster = 0;
+    membraTeile = teile;
+
+    const slotsBox = document.getElementById('membraSlots');
+    slotsBox.innerHTML = '';
+    teile.forEach((p, i) => {
+      const slot = document.createElement('div');
+      slot.className = 'membra-slot';
+      slot.id = `membraSlot${i}`;
+      slot.innerHTML = `<span class="slot-text">?</span>`;
+      slotsBox.appendChild(slot);
+    });
+
+    // Bank = korrekte Bausteine + bis zu 1 Grammatik-Distraktor + bis zu 2 Falsch-Segmentierungs-Distraktoren
+    const distraktoren = [];
+    for (const p of teile){
+      if (distraktoren.length >= 1) break;
+      const d = distraktorFuer(p.teil, p.text, korrekteTexte.concat(distraktoren));
+      if (d) distraktoren.push(d);
+    }
+    if (offsets){
+      const falsch = falschSegmentiert(currentItem.form, offsets, korrekteTexte.concat(distraktoren));
+      falsch.forEach(t => { if (distraktoren.length < 3) distraktoren.push(t); });
+    }
+
+    const bankBox = document.getElementById('membraBank');
+    bankBox.innerHTML = '';
+    const gemischt = korrekteTexte.concat(distraktoren).sort(() => Math.random() - 0.5);
+    gemischt.forEach(text => {
+      const chip = document.createElement('button');
+      chip.className = 'membra-chip';
+      chip.textContent = text;
+      chip.onclick = () => membraChipKlick(chip, text);
+      bankBox.appendChild(chip);
+    });
+
+    document.getElementById('membraControls').style.visibility = 'hidden';
+    document.getElementById('membraRatePrompt').style.visibility = 'hidden';
+  }
+
+  function membraChipKlick(chip, text){
+    if (chip.classList.contains('used')) return;
+    if (text === membraKorrekt[membraNaechster]){
+      const slot = document.getElementById(`membraSlot${membraNaechster}`);
+      slot.classList.add('filled');
+      slot.innerHTML = `<span class="slot-text">${text}</span><span class="slot-label">${membraTeile[membraNaechster].teil}</span>`;
+      chip.classList.add('used');
+      membraNaechster++;
+      if (membraNaechster === membraKorrekt.length){
+        document.getElementById('membraControls').style.visibility = 'visible';
+        document.getElementById('membraRatePrompt').style.visibility = 'visible';
+      }
+    } else {
+      chip.classList.add('shake');
+      setTimeout(() => chip.classList.remove('shake'), 300);
+    }
+  }
+
+  function membraRate(delta){
+    if (!currentItem) return;
+    if (delta === 0) currentItem.stage = 0;
+    else currentItem.stage = Math.min(4, currentItem.stage + delta);
+    progress[currentItem.id] = currentItem.stage;
+    saveProgress();
+    dailyStats.count++;
+    saveDailyStats();
+    renderDailyGoal();
+    renderStageBar();
+    lastItemId = currentItem.id;
+    nextItem();
+  }
+
   document.getElementById('expCard').addEventListener('click', () => {
     const card = document.getElementById('expCard');
     if (!card.classList.contains('flipped') && currentItem){
@@ -834,6 +1039,7 @@
       currentMode = tab.dataset.mode;
       document.getElementById('mcView').style.display = currentMode === 'mc' ? 'block' : 'none';
       document.getElementById('expView').style.display = currentMode === 'experte' ? 'block' : 'none';
+      document.getElementById('membraView').style.display = currentMode === 'membra' ? 'block' : 'none';
       nextItem();
     });
   });
