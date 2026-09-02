@@ -136,7 +136,7 @@
 
   <div class="modtabs">
     <div class="modtab active" data-mod="grundwortschatz">Grundwortschatz</div>
-    <div class="modtab" data-mod="autor">Cicero: De officiis</div>
+    <div class="modtab" data-mod="autor_cicero">Cicero</div>
     <div class="modtab" data-mod="autor_ovid">Ovid: Metamorphosen</div>
   </div>
 
@@ -358,7 +358,7 @@
     document.getElementById('backGram').style.display = (currentWord.gram && currentWord.gram !== currentWord.bed) ? 'block' : 'none';
     document.getElementById('backBed').textContent = currentWord.bed;
     document.getElementById('backKapitel').textContent =
-      (currentWord.typ === "autor" || currentWord.typ === "autor_ovid") ? currentWord.autorWerk : "";
+      (currentWord.typ === "autor_cicero" || currentWord.typ === "autor_ovid") ? currentWord.autorWerk : "";
     document.getElementById('card').classList.remove('flipped');
     document.getElementById('controls').style.visibility = 'hidden';
     document.getElementById('ratePrompt').style.visibility = 'hidden';
@@ -432,7 +432,7 @@
     renderDailyGoal();
 
     document.getElementById('totalCount').textContent =
-      `${ALL_WORDS.filter(w=>w.typ==='grundwortschatz').length} Grundwortschatz-Wörter · ${ALL_WORDS.filter(w=>w.typ==='autor').length} Cicero-Wörter · ${ALL_WORDS.filter(w=>w.typ==='autor_ovid').length} Ovid-Wörter`;
+      `${ALL_WORDS.filter(w=>w.typ==='grundwortschatz').length} Grundwortschatz-Wörter · ${ALL_WORDS.filter(w=>w.typ==='autor_cicero').length} Cicero-Wörter · ${ALL_WORDS.filter(w=>w.typ==='autor_ovid').length} Ovid-Wörter`;
 
     rebuildPool();
   }
