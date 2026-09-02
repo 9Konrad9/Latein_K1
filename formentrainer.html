@@ -210,7 +210,7 @@
 
   <!-- Multiple Choice Modus -->
   <div id="mcView">
-    <div class="arena">
+    <div class="arena" style="height:clamp(140px,20vh,180px); margin-bottom:14px;">
       <div class="card no-flip" id="mcCard">
         <div class="face front" style="position:relative; transform:none;">
           <div class="latin-word" id="mcForm">—</div>
@@ -265,12 +265,6 @@
       <button class="rate-btn good" onclick="membraRate(2)">🟢 sicher</button>
     </div>
   </div>
-
-  <p class="footer-note">
-    Formen-Grundlage: Buchners Grammatik-Begleiter Latein (Präsensstamm, regelmäßige Konjugationen + wichtigste Unregelmäßige).
-    Weitere Wortarten (Substantive, Pronomina, Adjektive) folgen. Fortschritt wird lokal in diesem Browser gespeichert
-    (in der Claude-Vorschau nur pro Sitzung).
-  </p>
 
 <script>
   let VERBEN_ALLE = { regelmaessig: [], unregelmaessig: [] };
@@ -741,7 +735,7 @@
     const anzahl = currentParadigma === "unregelmäßig" ? VERBEN_ALLE.unregelmaessig.length
       : currentParadigma === "alle" ? VERBEN_ALLE.regelmaessig.length + VERBEN_ALLE.unregelmaessig.length
       : VERBEN_ALLE.regelmaessig.filter(v=>v.klasse===REV_KLASSE_LABEL[currentParadigma]).length;
-    document.getElementById('counter').textContent = `${anzahl} Verben · Formen werden live erzeugt`;
+    document.getElementById('counter').textContent = `${anzahl} Verben`;
     nextItem();
   }
 
@@ -1063,7 +1057,7 @@
     document.getElementById('goalSelect').value = String(dailyStats.goal);
     renderDailyGoal();
     document.getElementById('totalCount').textContent =
-      `${VERBEN_ALLE.regelmaessig.length} regelmäßige + ${VERBEN_ALLE.unregelmaessig.length} unregelmäßige Verben — alle Formen live generiert`;
+      `${VERBEN_ALLE.regelmaessig.length} regelmäßige + ${VERBEN_ALLE.unregelmaessig.length} unregelmäßige Verben`;
     rebuildPool();
   }
 
