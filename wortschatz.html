@@ -69,6 +69,25 @@
   }
   .worst-btn.active{ background:var(--stage-red); color:#fff; }
 
+  .uebung-tabs{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; justify-content:center; }
+  .uebung-tab{
+    font-family:'JetBrains Mono', monospace; font-size:12px; padding:8px 16px;
+    border-radius:20px; border:1px solid #ffffff20; background:#00000030;
+    color:var(--parchment-dim); cursor:pointer; transition:all .2s;
+  }
+  .uebung-tab.active{ background:var(--bronze-2); color:#fff; border-color:var(--bronze-2); }
+
+  .mc-options{ display:flex; flex-direction:column; gap:10px; width:clamp(320px,55vw,720px); margin-bottom:14px; }
+  .mc-btn{
+    font-family:'Crimson Pro', serif; font-size:clamp(15px,2vw,18px); padding:14px 18px;
+    border-radius:10px; border:1px solid #ffffff20; background:#00000030; color:var(--parchment);
+    cursor:pointer; text-align:left; transition:background .15s, transform .1s, border-color .15s;
+  }
+  .mc-btn:hover{ background:#ffffff10; }
+  .mc-btn.correct{ border-color:var(--stage-green); background:#6b8f5c30; }
+  .mc-btn.wrong{ border-color:var(--stage-red); background:#b5533c30; }
+  .mc-btn:disabled{ cursor:default; }
+
   .stage-bar{ display:flex; gap:10px; margin-bottom:22px; font-family:'JetBrains Mono', monospace; font-size:12px; }
   .stage-chip{ display:flex; align-items:center; gap:6px; padding:5px 10px; border-radius:20px;
     background:#00000030; border:1px solid #ffffff14; color:var(--parchment-dim); }
@@ -79,6 +98,7 @@
   .card{ position:absolute; inset:0; cursor:pointer; transform-style:preserve-3d;
     transition:transform .6s cubic-bezier(.2,.8,.2,1); }
   .card.flipped{ transform:rotateY(180deg); }
+  .card.no-flip{ cursor:default; }
   .face{ position:absolute; inset:0; backface-visibility:hidden; border-radius:14px;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     padding:clamp(14px,4vw,22px); text-align:center; border:1px solid #ffffff1a;
@@ -157,29 +177,48 @@
     <button id="worstBtn" class="worst-btn">🔥 Worst-of-10</button>
   </div>
 
+  <div class="uebung-tabs">
+    <div class="uebung-tab active" data-modus="karten">Karten</div>
+    <div class="uebung-tab" data-modus="mc">Multiple Choice</div>
+  </div>
+
   <div class="stage-bar" id="stageBar"></div>
   <div class="counter" id="counter">1 / 1</div>
 
-  <div class="arena">
-    <div class="card" id="card">
-      <div class="face front">
-        <div class="latin-word" id="latinWord">—</div>
-        <div class="meta-tag" id="wortartTag">—</div>
-        <div class="hint">antippen zum Wenden</div>
+  <div id="kartenView">
+    <div class="arena">
+      <div class="card" id="card">
+        <div class="face front">
+          <div class="latin-word" id="latinWord">—</div>
+          <div class="meta-tag" id="wortartTag">—</div>
+          <div class="hint">antippen zum Wenden</div>
+        </div>
+        <div class="face back">
+          <div class="back-gram" id="backGram">—</div>
+          <div class="back-bed" id="backBed">—</div>
+          <div class="back-kapitel" id="backKapitel">—</div>
+        </div>
       </div>
-      <div class="face back">
-        <div class="back-gram" id="backGram">—</div>
-        <div class="back-bed" id="backBed">—</div>
-        <div class="back-kapitel" id="backKapitel">—</div>
-      </div>
+    </div>
+
+    <p class="rate-prompt" id="ratePrompt" style="visibility:hidden">Wie gut wusstest du die Antwort?</p>
+    <div class="controls" id="controls" style="visibility:hidden">
+      <button class="again" onclick="rate(0)">🔴 nochmal</button>
+      <button class="hard" onclick="rate(1)">🟡 wackelig</button>
+      <button class="good" onclick="rate(2)">🟢 sicher</button>
     </div>
   </div>
 
-  <p class="rate-prompt" id="ratePrompt" style="visibility:hidden">Wie gut wusstest du die Antwort?</p>
-  <div class="controls" id="controls" style="visibility:hidden">
-    <button class="again" onclick="rate(0)">🔴 nochmal</button>
-    <button class="hard" onclick="rate(1)">🟡 wackelig</button>
-    <button class="good" onclick="rate(2)">🟢 sicher</button>
+  <div id="mcView" style="display:none">
+    <div class="arena">
+      <div class="card no-flip" id="mcCard">
+        <div class="face front" style="position:relative; transform:none;">
+          <div class="latin-word" id="mcWord">—</div>
+          <div class="meta-tag" id="mcWortartTag">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="mc-options" id="mcOptions"></div>
   </div>
 
   <p class="footer-note">
@@ -263,6 +302,7 @@
   let seenCount = 0;
   let worstMode = false;
   let progress = {};
+  let currentUebungsmodus = "karten";
   let STORAGE_KEY = "latein-arena-kursstufe-fortschritt";
 
   // Leitner-Gewichtung: rote Karten (Stufe 0) erscheinen am häufigsten, gelbe (1-2)
@@ -344,6 +384,9 @@
       currentWord = null;
       document.getElementById('latinWord').textContent = "— keine Wörter —";
       document.getElementById('wortartTag').textContent = "";
+      document.getElementById('mcWord').textContent = "— keine Wörter —";
+      document.getElementById('mcWortartTag').textContent = "";
+      document.getElementById('mcOptions').innerHTML = '';
       document.getElementById('controls').style.visibility = 'hidden';
       document.getElementById('ratePrompt').style.visibility = 'hidden';
       document.getElementById('counter').textContent = "0 Wörter";
@@ -352,6 +395,15 @@
     }
     currentWord = pickNext();
     seenCount++;
+    document.getElementById('counter').textContent = worstMode
+      ? `Worst-of · ${seenCount}. Karte`
+      : `${seenCount}. Karte · ${pool.length} Wörter im Pool`;
+    renderStageBar();
+    if (currentUebungsmodus === "mc") renderMC();
+    else renderKarte();
+  }
+
+  function renderKarte(){
     document.getElementById('latinWord').textContent = currentWord.lemma;
     document.getElementById('wortartTag').textContent = WA_LABELS[currentWord.waGroup] || currentWord.waGroup;
     document.getElementById('backGram').textContent = currentWord.gram || "";
@@ -362,10 +414,55 @@
     document.getElementById('card').classList.remove('flipped');
     document.getElementById('controls').style.visibility = 'hidden';
     document.getElementById('ratePrompt').style.visibility = 'hidden';
-    document.getElementById('counter').textContent = worstMode
-      ? `Worst-of · ${seenCount}. Karte`
-      : `${seenCount}. Karte · ${pool.length} Wörter im Pool`;
+  }
+
+  function buildWortDistraktoren(wort){
+    // bevorzugt: andere Bedeutungen derselben Wortart im aktuellen Pool
+    let sameWa = pool.filter(w => w.waGroup === wort.waGroup && w.bed !== wort.bed);
+    let kandidaten = sameWa.length >= 3 ? sameWa : pool.filter(w => w.bed !== wort.bed);
+    const shuffled = kandidaten.slice().sort(() => Math.random()-0.5);
+    const distraktoren = [];
+    const seen = new Set([wort.bed]);
+    for (const c of shuffled){
+      if (!seen.has(c.bed)){ distraktoren.push(c.bed); seen.add(c.bed); }
+      if (distraktoren.length === 3) break;
+    }
+    return distraktoren;
+  }
+
+  function renderMC(){
+    document.getElementById('mcWord').textContent = currentWord.lemma;
+    document.getElementById('mcWortartTag').textContent = WA_LABELS[currentWord.waGroup] || currentWord.waGroup;
+    const options = buildWortDistraktoren(currentWord);
+    options.push(currentWord.bed);
+    options.sort(() => Math.random()-0.5);
+    const box = document.getElementById('mcOptions');
+    box.innerHTML = '';
+    options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'mc-btn';
+      btn.textContent = opt;
+      btn.onclick = () => handleMCAntwort(btn, opt);
+      box.appendChild(btn);
+    });
+  }
+
+  function handleMCAntwort(btn, gewaehlt){
+    const korrekt = gewaehlt === currentWord.bed;
+    document.querySelectorAll('.mc-btn').forEach(b => {
+      b.disabled = true;
+      if (b.textContent === currentWord.bed) b.classList.add('correct');
+      else if (b === btn && !korrekt) b.classList.add('wrong');
+    });
+    currentWord.stage = korrekt ? Math.min(4, currentWord.stage + 1) : 0;
+    progress[currentWord.id] = currentWord.stage;
+    saveProgress(progress);
+    dailyStats.count++;
+    saveDailyStats();
+    renderDailyGoal();
     renderStageBar();
+    lastWordId = currentWord.id;
+    setTimeout(showCard, korrekt ? 650 : 1300);
   }
 
   document.getElementById('card').addEventListener('click', () => {
@@ -396,6 +493,17 @@
       tab.classList.add('active');
       currentMod = tab.dataset.mod;
       rebuildPool();
+    });
+  });
+
+  document.querySelectorAll('.uebung-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.uebung-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentUebungsmodus = tab.dataset.modus;
+      document.getElementById('kartenView').style.display = currentUebungsmodus === 'karten' ? 'block' : 'none';
+      document.getElementById('mcView').style.display = currentUebungsmodus === 'mc' ? 'block' : 'none';
+      showCard();
     });
   });
 
