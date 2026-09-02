@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Errungenschaften · Latein-Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#161d18; --bg-panel:#1f2b22;
+    --bronze-1:#3d4a3a; --bronze-2:#5c6b4f;
+    --gold:#c9a961; --parchment:#e9e2d0; --parchment-dim:#a9a894;
+    --stage-red:#b5533c; --stage-yellow:#c9a961; --stage-green:#6b8f5c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100dvh;
+    background:
+      radial-gradient(ellipse at 20% -10%, #24322650 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 100%, #2a1f1650 0%, transparent 50%),
+      var(--bg-deep);
+    color:var(--parchment); font-family:'Crimson Pro', serif;
+    display:flex; flex-direction:column; align-items:center;
+    padding:clamp(24px,6vh,64px) clamp(16px,4vw,32px);
+  }
+  a.back{ align-self:flex-start; color:var(--parchment-dim); font-family:'JetBrains Mono', monospace;
+    font-size:11px; text-decoration:none; margin-bottom:14px; }
+  .eyebrow{ font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--parchment-dim); margin-bottom:8px; }
+  h1{ font-family:'Cinzel', serif; font-weight:700; font-size:clamp(28px,4.5vw,44px);
+    letter-spacing:.03em; margin:0 0 10px; text-align:center; }
+  .subtitle{ color:var(--parchment-dim); font-style:italic; font-size:15px;
+    margin-bottom:clamp(28px,5vh,44px); text-align:center; max-width:520px; }
+
+  .grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));
+    gap:20px; width:100%; max-width:960px;
+  }
+  .card{
+    padding:24px 24px; border-radius:14px 34px 14px 34px;
+    background:linear-gradient(155deg, var(--bronze-2), var(--bronze-1) 70%);
+    border:1px solid #ffffff1a; box-shadow:0 20px 50px -20px #000000aa, inset 0 1px 0 #ffffff10;
+  }
+  .card-title{ font-family:'Cinzel', serif; font-weight:700; font-size:19px; margin-bottom:4px; }
+  .card-desc{ font-size:14px; color:var(--parchment-dim); margin-bottom:16px; }
+  .card-current{ font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--gold); margin-bottom:10px; }
+
+  .tier-row{ display:flex; align-items:center; gap:10px; margin-bottom:9px; }
+  .tier-dot{
+    width:20px; height:20px; border-radius:50%; flex-shrink:0;
+    border:2px solid #ffffff30; background:#00000030;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-family:'JetBrains Mono', monospace; color:var(--parchment-dim);
+  }
+  .tier-dot.erreicht{ border-color:var(--gold); background:var(--gold); color:#1c211c; font-weight:700; }
+  .tier-label{ font-family:'JetBrains Mono', monospace; font-size:12px; flex:1; }
+  .tier-label .tier-name{ color:var(--parchment); }
+  .tier-label .tier-schwelle{ color:var(--parchment-dim); margin-left:6px; }
+  .tier-row.erreicht .tier-label .tier-name{ color:var(--gold); }
+
+  .progress-bar{ height:6px; border-radius:3px; background:#00000040; overflow:hidden; margin-top:6px; }
+  .progress-fill{ height:100%; background:linear-gradient(90deg, var(--stage-red), var(--stage-yellow), var(--stage-green)); }
+
+  .footer-note{
+    font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--parchment-dim);
+    margin-top:clamp(36px,6vh,56px); text-align:center; max-width:520px; line-height:1.7;
+  }
+</style>
+</head>
+<body>
+
+  <a class="back" href="./index.html">← Übersicht</a>
+  <div class="eyebrow">Latein-Arena</div>
+  <h1>Errungenschaften</h1>
+  <p class="subtitle">Vier Stufen — Bronze, Silber, Gold, Diamant — pro Kategorie. Basiert auf deinem lokal gespeicherten Fortschritt in Vocābula und Formae.</p>
+
+  <div class="grid" id="grid"></div>
+
+  <p class="footer-note">
+    Die Werte werden direkt aus dem gespeicherten Lernfortschritt beider Tools berechnet — kein zusätzliches Tracking nötig.
+    In der Claude-Vorschau steht hier nur der Fortschritt der aktuellen Sitzung, auf GitHub Pages bleibt er dauerhaft erhalten.
+  </p>
+
+<script>
+  const TIERS = [
+    {name:"Bronze", key:"bronze"},
+    {name:"Silber", key:"silber"},
+    {name:"Gold", key:"gold"},
+    {name:"Diamant", key:"diamant"},
+  ];
+
+  function ladeProgress(key){
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : {};
+    } catch(e) { return {}; }
+  }
+
+  const vocProgress = ladeProgress("latein-arena-kursstufe-fortschritt");
+  const formProgress = ladeProgress("formentrainer-fortschritt");
+
+  function auswertung(progress){
+    const stufen = Object.values(progress);
+    const geuebt = stufen.length;
+    const sicher = stufen.filter(s => s >= 3).length;
+    return { geuebt, sicher };
+  }
+
+  const vAusw = auswertung(vocProgress);
+  const fAusw = auswertung(formProgress);
+
+  const KATEGORIEN = [
+    { titel:"Vocābula — Umfang", beschreibung:"Verschiedene Wörter im Karteikasten geübt", wert: vAusw.geuebt, schwellen:{bronze:10, silber:50, gold:150, diamant:400} },
+    { titel:"Vocābula — Sicherheit", beschreibung:"Wörter auf Stufe „sicher“ (🟢) gebracht", wert: vAusw.sicher, schwellen:{bronze:10, silber:50, gold:150, diamant:400} },
+    { titel:"Formae — Umfang", beschreibung:"Verschiedene Formen im Formentrainer geübt", wert: fAusw.geuebt, schwellen:{bronze:10, silber:50, gold:150, diamant:400} },
+    { titel:"Formae — Sicherheit", beschreibung:"Formen auf Stufe „sicher“ (🟢) gebracht", wert: fAusw.sicher, schwellen:{bronze:10, silber:50, gold:150, diamant:400} },
+  ];
+
+  const grid = document.getElementById('grid');
+  KATEGORIEN.forEach(k => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    let hoechsteStufe = null;
+    TIERS.forEach(t => { if (k.wert >= k.schwellen[t.key]) hoechsteStufe = t.name; });
+
+    const naechste = TIERS.find(t => k.wert < k.schwellen[t.key]);
+    const naechsteSchwelle = naechste ? k.schwellen[naechste.key] : k.schwellen.diamant;
+    const vorherigeSchwelle = (() => {
+      const idx = TIERS.findIndex(t => t.name === (naechste ? naechste.name : "Diamant"));
+      return idx > 0 ? k.schwellen[TIERS[idx-1].key] : 0;
+    })();
+    const spanne = naechsteSchwelle - vorherigeSchwelle;
+    const fortschrittImSpan = Math.max(0, k.wert - vorherigeSchwelle);
+    const pct = Math.min(100, Math.round((fortschrittImSpan / spanne) * 100));
+
+    card.innerHTML = `
+      <div class="card-title">${k.titel}</div>
+      <div class="card-desc">${k.beschreibung}</div>
+      <div class="card-current">${k.wert} erreicht${hoechsteStufe ? ` · aktuell: ${hoechsteStufe}` : ''}</div>
+      ${TIERS.map(t => {
+        const erreicht = k.wert >= k.schwellen[t.key];
+        return `<div class="tier-row ${erreicht?'erreicht':''}">
+          <div class="tier-dot ${erreicht?'erreicht':''}">${erreicht?'✓':''}</div>
+          <div class="tier-label"><span class="tier-name">${t.name}</span><span class="tier-schwelle">ab ${k.schwellen[t.key]}</span></div>
+        </div>`;
+      }).join('')}
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    `;
+    grid.appendChild(card);
+  });
+</script>
+</body>
+</html>
