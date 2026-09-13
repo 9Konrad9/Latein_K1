@@ -378,13 +378,15 @@
     const basisform = reihe[personIdx];
     if (!basisform) return null;
     const form = verb.praefix + basisform;
+    // Die Grundverben (esse, ferre, velle, īre ...) haben kein Präfix -- dann entfällt
+    // der Baustein ganz, statt einen Platzhalter-Chip anzuzeigen.
+    const teile = [];
+    if (verb.praefix) teile.push({teil:"Präfix", text: verb.praefix});
+    teile.push({teil:`Grundform von "${verb.basis}"`, text: basisform});
     return {
       form,
       bestimmung: `${PERSON_LABEL[personIdx]}, ${TEMPUS_LABEL[tempusModus]} ${genus}`,
-      teile: [
-        {teil:"Präfix", text: verb.praefix || "(kein Präfix, Grundverb)"},
-        {teil:`Grundform von "${verb.basis}"`, text: basisform}
-      ]
+      teile
     };
   }
 
@@ -743,7 +745,10 @@
     let versuch = 0, item = null;
     while (versuch < 10){
       item = zufallsItem();
-      if (item && item.id !== lastItemId) break;
+      // Im Membra-Modus sind einteilige Formen (Grundverben ohne Präfix, prōdesse)
+      // kein Rätsel -- dann lieber noch einmal würfeln.
+      const zerlegbar = currentMode !== "membra" || (item && item.bausteine && item.bausteine.length >= 2);
+      if (item && item.id !== lastItemId && zerlegbar) break;
       versuch++;
     }
     if (item) item.stage = progress[item.id] !== undefined ? progress[item.id] : 0;
