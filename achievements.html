@@ -60,7 +60,7 @@
   </div>
   <div class="trenner"></div>
 
-  <p class="untertitel">Vier Stufen — Bronze, Silber, Gold, Diamant — pro Kategorie. Basiert auf deinem auf diesem Gerät gespeicherten Fortschritt in Vocābula und Formae.</p>
+  <p class="untertitel">Vier Stufen — Bronze, Silber, Gold, Diamant — pro Kategorie. Basiert auf deinem auf diesem Gerät gespeicherten Fortschritt in Vocābula, Verba und Nōmina.</p>
 
   <div class="gitter" id="grid"></div>
 
@@ -83,6 +83,7 @@
 
   const vocProgress = ladeProgress("latein-arena-kursstufe-fortschritt");
   const formProgress = ladeProgress("formentrainer-fortschritt");
+  const nomProgress  = ladeProgress("nomina-fortschritt");
 
   function auswertung(progress){
     const stufen = Object.values(progress);
@@ -91,12 +92,15 @@
 
   const vAusw = auswertung(vocProgress);
   const fAusw = auswertung(formProgress);
+  const nAusw = auswertung(nomProgress);
 
   const KATEGORIEN = [
     { titel:"Vocābula — Umfang", beschreibung:"Verschiedene Wörter im Karteikasten geübt", wert: vAusw.geuebt, schwellen:{bronze:10, silber:50, gold:150, diamant:400} },
     { titel:"Vocābula — Sicherheit", beschreibung:"Wörter auf Stufe „sicher“ gebracht", wert: vAusw.sicher, schwellen:{bronze:10, silber:50, gold:150, diamant:400} },
-    { titel:"Formae — Umfang", beschreibung:"Verschiedene Formen im Formentrainer geübt", wert: fAusw.geuebt, schwellen:{bronze:10, silber:50, gold:150, diamant:400} },
-    { titel:"Formae — Sicherheit", beschreibung:"Formen auf Stufe „sicher“ gebracht", wert: fAusw.sicher, schwellen:{bronze:10, silber:50, gold:150, diamant:400} },
+    { titel:"Verba — Umfang", beschreibung:"Verschiedene Verbformen geübt", wert: fAusw.geuebt, schwellen:{bronze:10, silber:50, gold:150, diamant:400} },
+    { titel:"Verba — Sicherheit", beschreibung:"Verbformen auf Stufe „sicher“ gebracht", wert: fAusw.sicher, schwellen:{bronze:10, silber:50, gold:150, diamant:400} },
+    { titel:"Nōmina — Umfang", beschreibung:"Verschiedene Nominalformen bestimmt", wert: nAusw.geuebt, schwellen:{bronze:10, silber:50, gold:150, diamant:400} },
+    { titel:"Nōmina — Sicherheit", beschreibung:"Nominalformen auf Stufe „sicher“ gebracht", wert: nAusw.sicher, schwellen:{bronze:10, silber:50, gold:150, diamant:400} },
   ];
 
   const grid = document.getElementById('grid');

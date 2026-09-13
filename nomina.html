@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nōmina · Latein-Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
+<style>
+  .subcount{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); margin-bottom:14px; text-align:center; }
+
+  .daily-goal{ display:flex; align-items:center; gap:10px; margin-bottom:16px;
+    width:clamp(320px,58vw,760px); flex-wrap:wrap; justify-content:center; }
+  .daily-goal-text{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); white-space:nowrap; }
+  .daily-goal-bar{ flex:1; min-width:120px; height:10px; border-radius:5px;
+    background:var(--wand-tief); overflow:hidden; border:1px solid var(--bronze); }
+  .daily-goal-fill{ height:100%; background:var(--pompeji); transition:width .4s ease; }
+  .daily-goal.reached .daily-goal-text{ color:var(--richtig); font-weight:600;
+    background:url('assets/ui/lorbeer.png') left center / 18px auto no-repeat; padding-left:23px; }
+  #goalSelect{ font-size:10px; padding:4px 8px; }
+
+  .modetabs{ display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; justify-content:center; }
+  .modetab{ font-family:var(--font-mono); font-size:12px; padding:8px 16px; border-radius:20px;
+    border:1px solid var(--bronze); background:var(--putz); color:var(--ink-soft);
+    cursor:pointer; transition:all .18s; user-select:none; }
+  .modetab:hover{ background:var(--putz-hell); color:var(--ink); }
+  .modetab.active{ background-color:var(--pompeji); background-image:url('assets/ui/porphyr.jpg');
+    background-size:260px auto; color:var(--marmor); border-color:#6d1f1f; box-shadow:var(--schatten); }
+
+  .filterbar{ display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; justify-content:center; }
+
+  .stage-bar{ display:flex; gap:9px; margin-bottom:16px; font-family:var(--font-mono);
+    font-size:12px; flex-wrap:wrap; justify-content:center; }
+  .stage-chip{ display:flex; align-items:center; gap:6px; padding:4px 11px 4px 5px; border-radius:20px;
+    background:var(--putz); border:1px solid var(--bronze); color:var(--ink); }
+  .dot{ width:17px; height:17px; border-radius:50%; display:inline-block;
+    background-size:contain; background-repeat:no-repeat; background-position:center; }
+  .dot.rot{ background-image:url('assets/ui/muenze-bronze.png'); }
+  .dot.gelb{ background-image:url('assets/ui/muenze-silber.png'); }
+  .dot.gruen{ background-image:url('assets/ui/muenze-gold.png'); }
+
+  .counter{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); margin-bottom:8px; }
+
+  .arena{ position:relative; width:clamp(320px,58vw,760px); height:clamp(200px,34vh,330px);
+    perspective:1500px; margin-bottom:clamp(12px,3vh,20px); }
+  .card{ position:absolute; inset:0; cursor:pointer; transform-style:preserve-3d;
+    transition:transform .6s cubic-bezier(.2,.8,.2,1); }
+  .card.flipped{ transform:rotateY(180deg); }
+  .card.no-flip{ cursor:default; }
+  .arena-kompakt{ height:auto; margin-bottom:14px; perspective:none; }
+  .arena-kompakt .card, .arena-kompakt .face{ position:relative; }
+  .face{ position:absolute; inset:0; backface-visibility:hidden;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:clamp(18px,3.5vw,30px); text-align:center;
+    filter:drop-shadow(0 8px 20px rgba(80,60,30,.26)); }
+  .face.front{ background:var(--marmor); border:26px solid transparent;
+    border-image:url('assets/ui/marmor.png') 44 fill stretch; }
+  .face.back{ transform:rotateY(180deg); background:#f6ecd4; border:18px solid transparent;
+    border-image:url('assets/ui/pergament.png') 26 fill stretch; }
+  .latin-word{ font-family:var(--font-display); font-weight:700;
+    font-size:clamp(24px,3.5vw,42px); letter-spacing:.02em; color:var(--ink); }
+  .meta-tag{ font-family:var(--font-mono); font-size:10px; color:var(--ink-soft);
+    margin-top:10px; letter-spacing:.05em; }
+  .back-bed{ font-size:clamp(17px,2.6vw,28px); line-height:1.35; color:var(--pompeji); font-weight:600; }
+  .back-lemma{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); margin-top:10px; }
+  .hint{ position:absolute; bottom:12px; font-family:var(--font-mono); font-size:10px;
+    color:var(--ink-soft); opacity:.7; }
+
+  /* Mehrdeutige Formen: die weiteren gueltigen Bestimmungen */
+  .auch{ font-family:var(--font-mono); font-size:12px; color:var(--ink-soft);
+    margin-top:10px; line-height:1.5; }
+
+  .rate-prompt{ font-family:var(--font-body); font-style:italic; font-size:15px;
+    color:var(--ink-soft); margin:0 0 10px; text-align:center; }
+  .controls{ display:flex; gap:10px; margin-bottom:8px; flex-wrap:wrap; justify-content:center; }
+  .controls button{ font-family:var(--font-mono); font-size:clamp(12px,1.4vw,14px);
+    padding:10px 20px; border-radius:8px; border:2px solid var(--bronze);
+    background:var(--putz); color:var(--ink); cursor:pointer; }
+  .controls button:hover{ background:var(--putz-hell); transform:translateY(-1px); }
+  button.again{ border-color:var(--stufe-rot);   color:var(--stufe-rot); }
+  button.hard{  border-color:var(--stufe-gelb);  color:var(--stufe-gelb); }
+  button.good{  border-color:var(--stufe-gruen); color:var(--stufe-gruen); }
+
+  .mc-options{ display:flex; flex-direction:column; gap:9px; width:clamp(320px,58vw,760px); margin-bottom:14px; }
+  .mc-btn{ font-family:var(--font-body); font-size:clamp(15px,1.9vw,18px); padding:13px 18px;
+    border-radius:9px; border:1px solid var(--bronze); background:var(--putz); color:var(--ink);
+    cursor:pointer; text-align:left; transition:background .15s, border-color .15s; }
+  .mc-btn:hover:not(:disabled){ background:var(--putz-hell); border-color:var(--pompeji); }
+  .mc-btn.correct{ border:2px solid var(--richtig); background:#dcecd8; color:#1f4d27; font-weight:600; }
+  .mc-btn.wrong{ border:2px solid var(--falsch); background:#f4dad6; color:#7d1f1f; }
+  .mc-btn:disabled{ cursor:default; }
+  .mc-hinweis{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft);
+    margin:0 0 12px; text-align:center; min-height:16px; }
+
+  .footer-note{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft);
+    margin-top:18px; text-align:center; max-width:520px; line-height:1.6; }
+  .footer-note a{ color:var(--ink-soft); }
+  .footer-note a:hover{ color:var(--pompeji); }
+</style>
+</head>
+<body>
+  <div class="saeule-links"></div>
+  <div class="saeule-rechts"></div>
+
+  <a class="zurueck" href="./index.html">← Übersicht</a>
+
+  <div class="kopf-tafel">
+    <div class="eyebrow">Latein-Arena</div>
+    <h1>Nōmina</h1>
+    <div class="kopf-unter">Kursstufe K1</div>
+  </div>
+  <div class="trenner"></div>
+
+  <div class="subcount" id="totalCount"></div>
+
+  <div class="daily-goal" id="dailyGoal">
+    <div class="daily-goal-text" id="dailyGoalText">Heute: 0 / 20 Formen</div>
+    <div class="daily-goal-bar"><div class="daily-goal-fill" id="dailyGoalFill" style="width:0%"></div></div>
+    <select id="goalSelect" title="Tagesziel anpassen">
+      <option value="10">Ziel: 10/Tag</option>
+      <option value="20" selected>Ziel: 20/Tag</option>
+      <option value="30">Ziel: 30/Tag</option>
+      <option value="50">Ziel: 50/Tag</option>
+    </select>
+  </div>
+
+  <div class="modetabs">
+    <div class="modetab active" data-mode="mc">Multiple Choice</div>
+    <div class="modetab" data-mode="exp">Experten-Modus</div>
+  </div>
+
+  <div class="filterbar">
+    <select id="wortartFilter">
+      <option value="alle">Substantive + Adjektive</option>
+      <option value="substantive">nur Substantive</option>
+      <option value="adjektive">nur Adjektive</option>
+    </select>
+    <select id="klasseFilter">
+      <option value="alle">Alle Deklinationen</option>
+      <option value="a">a-Deklination</option>
+      <option value="o">o-Deklination</option>
+      <option value="kons">konsonantische</option>
+      <option value="i">i-Stämme</option>
+      <option value="u">u-Deklination</option>
+      <option value="e">e-Deklination</option>
+      <option value="ao">Adjektiv o/a (bonus)</option>
+      <option value="3-3">Adjektiv dreiendig (ācer)</option>
+      <option value="3-2">Adjektiv zweiendig (fortis)</option>
+      <option value="3-1">Adjektiv einendig (fēlīx)</option>
+    </select>
+    <select id="numerusFilter">
+      <option value="alle">Singular + Plural</option>
+      <option value="sg">nur Singular</option>
+      <option value="pl">nur Plural</option>
+    </select>
+  </div>
+
+  <div class="stage-bar" id="stageBar"></div>
+  <div class="counter" id="counter">—</div>
+
+  <div id="mcView">
+    <div class="arena arena-kompakt">
+      <div class="card no-flip" id="mcCard">
+        <div class="face front">
+          <div class="latin-word" id="mcForm">—</div>
+          <div class="meta-tag" id="mcLemma">—</div>
+        </div>
+      </div>
+    </div>
+    <p class="mc-hinweis" id="mcHinweis"></p>
+    <div class="mc-options" id="mcOptions"></div>
+  </div>
+
+  <div id="expView" style="display:none">
+    <div class="arena">
+      <div class="card" id="expCard">
+        <div class="face front">
+          <div class="latin-word" id="expForm">—</div>
+          <div class="meta-tag" id="expLemma">—</div>
+          <div class="hint">antippen zum Wenden</div>
+        </div>
+        <div class="face back">
+          <div class="back-bed" id="expBestimmung">—</div>
+          <div class="auch" id="expAuch"></div>
+          <div class="back-lemma" id="expLemmaBack">—</div>
+        </div>
+      </div>
+    </div>
+    <p class="rate-prompt" id="expRatePrompt" style="visibility:hidden">Wie sicher wusstest du die Bestimmung?</p>
+    <div class="controls" id="expControls" style="visibility:hidden">
+      <button class="again" onclick="rate(0)">🔴 nochmal</button>
+      <button class="hard" onclick="rate(1)">🟡 wackelig</button>
+      <button class="good" onclick="rate(2)">🟢 sicher</button>
+    </div>
+  </div>
+
+  <p class="footer-note">
+    Eine Form lässt oft mehrere Bestimmungen zu — jede zutreffende gilt als richtig,
+    die übrigen werden danach angezeigt.<br>
+    <a href="#" id="resetLink">Fortschritt zurücksetzen</a>
+  </p>
+
+<script src="nomina-engine.js"></script>
+<script>
+  let NOMINA = { substantive: [], adjektive: [] };
+
+  async function ladeDaten(){
+    try {
+      const res = await fetch('./nomina-alle.json');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      NOMINA = await res.json();
+      initNachLaden();
+    } catch (err) {
+      document.getElementById('mcForm').textContent = "⚠ Daten nicht geladen";
+      document.getElementById('totalCount').textContent =
+        "nomina-alle.json konnte nicht geladen werden — die Datei muss im selben Ordner liegen " +
+        "und über einen Webserver aufgerufen werden (nicht per Doppelklick).";
+      console.error(err);
+    }
+  }
+
+  // --- Tagesziel (gleiches Prinzip wie in Verba) ---
+  const DAILY_KEY = "nomina-tagesstatistik";
+  const STORAGE_KEY = "nomina-fortschritt";
+  let dailyStats = { date: "", count: 0, goal: 20 };
+  let progress = {};
+
+  function todayStr(){
+    const d = new Date();
+    return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+  }
+  function loadDailyStats(){
+    try {
+      const raw = localStorage.getItem(DAILY_KEY);
+      const p = raw ? JSON.parse(raw) : null;
+      if (p && p.date === todayStr()) return p;
+      return { date: todayStr(), count: 0, goal: p ? p.goal : 20 };
+    } catch(e) { return { date: todayStr(), count: 0, goal: 20 }; }
+  }
+  function saveDailyStats(){ try { localStorage.setItem(DAILY_KEY, JSON.stringify(dailyStats)); } catch(e) {} }
+  function saveProgress(){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch(e) {} }
+  function renderDailyGoal(){
+    const pct = Math.min(100, Math.round((dailyStats.count / dailyStats.goal) * 100));
+    document.getElementById('dailyGoalFill').style.width = pct + '%';
+    const box = document.getElementById('dailyGoal');
+    box.classList.toggle('reached', dailyStats.count >= dailyStats.goal);
+    document.getElementById('dailyGoalText').textContent =
+      (dailyStats.count >= dailyStats.goal ? '🎉 Tagesziel erreicht: ' : 'Heute: ')
+      + `${dailyStats.count} / ${dailyStats.goal} Formen`;
+  }
+
+  // --- Auswahl ---
+  const KASUS = NominaEngine.KASUS;
+  const KASUS_LABEL = NominaEngine.KASUS_LABEL;
+  const NUMERUS_LABEL = NominaEngine.NUMERUS_LABEL;
+  const KLASSE_LABEL = {
+    a:"a-Deklination", o:"o-Deklination", kons:"konsonantische Deklination",
+    i:"i-Stamm (3. Deklination)", u:"u-Deklination", e:"e-Deklination",
+    ao:"Adjektiv o/a-Deklination", "3-3":"Adjektiv, dreiendig",
+    "3-2":"Adjektiv, zweiendig", "3-1":"Adjektiv, einendig"
+  };
+  const GENUS_LANG = { m:"maskulin", f:"feminin", n:"neutrum" };
+
+  let currentMode = "mc";
+  let currentWortart = "alle";
+  let currentKlasse = "alle";
+  let currentNumerus = "alle";
+  let currentItem = null;
+  let lastItemId = null;
+  let seenCount = 0;
+
+  function istAdjektivKlasse(k){ return k === "ao" || k.startsWith("3-"); }
+
+  function pool(){
+    let liste = [];
+    if (currentWortart !== "adjektive") liste = liste.concat(NOMINA.substantive.map(e => ({ e, adj:false })));
+    if (currentWortart !== "substantive") liste = liste.concat(NOMINA.adjektive.map(e => ({ e, adj:true })));
+    if (currentKlasse !== "alle") liste = liste.filter(x => x.e.klasse === currentKlasse);
+    return liste;
+  }
+
+  // Alle Bestimmungen, die auf diese Form zutreffen. Lateinische Nominalformen
+  // sind haeufig mehrdeutig (puellae: Gen. Sg., Dat. Sg., Nom. Pl.) -- der
+  // Trainer muss deshalb jede davon als richtig anerkennen.
+  function bestimmungenFuer(eintrag, form, genus){
+    const t = NominaEngine.tabelle(eintrag, genus);
+    const treffer = [];
+    for (const num of ["sg","pl"])
+      for (const k of KASUS)
+        if (t[num][k] === form) treffer.push({ kasus:k, numerus:num });
+    return treffer;
+  }
+
+  function label(b){ return KASUS_LABEL[b.kasus] + " " + NUMERUS_LABEL[b.numerus]; }
+
+  function zufallsItem(){
+    const p = pool();
+    if (!p.length) return null;
+    for (let versuch = 0; versuch < 20; versuch++){
+      const { e, adj } = p[Math.floor(Math.random() * p.length)];
+      const genus = adj ? ["m","f","n"][Math.floor(Math.random()*3)] : e.genus;
+      const numeri = currentNumerus === "alle" ? ["sg","pl"] : [currentNumerus];
+      const num = numeri[Math.floor(Math.random()*numeri.length)];
+      const kas = KASUS[Math.floor(Math.random()*KASUS.length)];
+      const form = NominaEngine.form(e, kas, num, genus);
+      if (!form) continue;
+      const alle = bestimmungenFuer(e, form, genus)
+        .filter(b => currentNumerus === "alle" || b.numerus === currentNumerus);
+      if (!alle.length) continue;
+      return {
+        id: e.lemma + "|" + genus + "|" + form + "|" + currentNumerus,
+        eintrag: e, adj, genus, form, alle,
+        klasseLabel: KLASSE_LABEL[e.klasse] || e.klasse
+      };
+    }
+    return null;
+  }
+</script>
+<script>
+  // --- Anzeige ---
+  function kopfzeile(item){
+    const e = item.eintrag;
+    if (item.adj) return `${e.lemma} · ${item.klasseLabel} · ${GENUS_LANG[item.genus]}`;
+    return `${e.lemma}, ${e.gen} (${item.genus}.) · ${item.klasseLabel}`;
+  }
+
+  function renderStageBar(){
+    const bar = document.getElementById('stageBar');
+    const stufen = Object.values(progress);
+    if (!stufen.length){ bar.innerHTML = `<div class="stage-chip">Noch keine Formen geübt — leg los!</div>`; return; }
+    const rot = stufen.filter(s => s === 0).length;
+    const gelb = stufen.filter(s => s === 1 || s === 2).length;
+    const gruen = stufen.filter(s => s >= 3).length;
+    bar.innerHTML =
+      `<div class="stage-chip"><span class="dot rot"></span>${rot}</div>` +
+      `<div class="stage-chip"><span class="dot gelb"></span>${gelb}</div>` +
+      `<div class="stage-chip"><span class="dot gruen"></span>${gruen}</div>` +
+      `<div class="stage-chip">${stufen.length} insgesamt geübt</div>`;
+  }
+
+  // Distraktoren: Bestimmungen, die auf diese Form gerade NICHT zutreffen.
+  function distraktoren(item, anzahl){
+    const gueltig = new Set(item.alle.map(label));
+    const rest = [];
+    for (const num of ["sg","pl"]) for (const k of KASUS){
+      const l = KASUS_LABEL[k] + " " + NUMERUS_LABEL[num];
+      if (!gueltig.has(l)) rest.push(l);
+    }
+    rest.sort(() => Math.random() - 0.5);
+    return rest.slice(0, anzahl);
+  }
+
+  function naechstesItem(){
+    let item = null;
+    for (let i = 0; i < 12; i++){ item = zufallsItem(); if (item && item.id !== lastItemId) break; }
+    currentItem = item;
+    if (!currentItem){
+      document.getElementById('mcForm').textContent = "— keine Formen für diese Filterkombination —";
+      document.getElementById('expForm').textContent = "— keine Formen für diese Filterkombination —";
+      document.getElementById('mcOptions').innerHTML = '';
+      return;
+    }
+    seenCount++;
+    document.getElementById('counter').textContent = `${seenCount}. Form · ${pool().length} Wörter im Pool`;
+    renderStageBar();
+    if (currentMode === "mc") renderMC(); else renderExperte();
+  }
+
+  function renderMC(){
+    const item = currentItem;
+    document.getElementById('mcForm').textContent = item.form;
+    document.getElementById('mcLemma').textContent = kopfzeile(item);
+    document.getElementById('mcHinweis').textContent =
+      item.alle.length > 1 ? `Diese Form lässt ${item.alle.length} Bestimmungen zu — eine davon genügt.` : '';
+    const richtige = item.alle.map(label);
+    const optionen = [richtige[Math.floor(Math.random()*richtige.length)]].concat(distraktoren(item, 3));
+    optionen.sort(() => Math.random() - 0.5);
+    const box = document.getElementById('mcOptions');
+    box.innerHTML = '';
+    optionen.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'mc-btn';
+      btn.textContent = opt;
+      btn.onclick = () => mcAntwort(btn, opt);
+      box.appendChild(btn);
+    });
+  }
+
+  function mcAntwort(btn, gewaehlt){
+    const item = currentItem;
+    const gueltig = new Set(item.alle.map(label));
+    const korrekt = gueltig.has(gewaehlt);
+    document.querySelectorAll('#mcOptions .mc-btn').forEach(b => {
+      b.disabled = true;
+      if (gueltig.has(b.textContent)) b.classList.add('correct');
+      else if (b === btn) b.classList.add('wrong');
+    });
+    if (item.alle.length > 1){
+      const andere = item.alle.map(label).filter(l => l !== gewaehlt);
+      document.getElementById('mcHinweis').textContent =
+        (korrekt ? 'Richtig. Ebenso möglich: ' : 'Möglich wäre: ') + andere.join(' · ');
+    }
+    merken(korrekt ? 1 : 0);
+    setTimeout(naechstesItem, korrekt ? 900 : 1800);
+  }
+
+  function renderExperte(){
+    const item = currentItem;
+    document.getElementById('expForm').textContent = item.form;
+    document.getElementById('expLemma').textContent = kopfzeile(item);
+    document.getElementById('expBestimmung').textContent = label(item.alle[0]);
+    document.getElementById('expAuch').textContent =
+      item.alle.length > 1 ? 'ebenso möglich: ' + item.alle.slice(1).map(label).join(' · ') : '';
+    document.getElementById('expLemmaBack').textContent = item.eintrag.bedeutung || '';
+    document.getElementById('expCard').classList.remove('flipped');
+    document.getElementById('expControls').style.visibility = 'hidden';
+    document.getElementById('expRatePrompt').style.visibility = 'hidden';
+  }
+</script>
+<script>
+  // Leitner-Stufe je Form merken
+  function merken(delta){
+    const id = currentItem.id;
+    const alt = progress[id] === undefined ? 0 : progress[id];
+    progress[id] = delta === 0 ? 0 : Math.min(4, alt + delta);
+    saveProgress();
+    dailyStats.count++;
+    saveDailyStats();
+    renderDailyGoal();
+    renderStageBar();
+    lastItemId = id;
+  }
+
+  function rate(delta){
+    if (!currentItem) return;
+    merken(delta);
+    naechstesItem();
+  }
+
+  document.getElementById('expCard').addEventListener('click', () => {
+    const c = document.getElementById('expCard');
+    if (!c.classList.contains('flipped') && currentItem){
+      c.classList.add('flipped');
+      document.getElementById('expControls').style.visibility = 'visible';
+      document.getElementById('expRatePrompt').style.visibility = 'visible';
+    }
+  });
+
+  document.querySelectorAll('.modetab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.modetab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentMode = tab.dataset.mode;
+      document.getElementById('mcView').style.display  = currentMode === 'mc'  ? 'block' : 'none';
+      document.getElementById('expView').style.display = currentMode === 'exp' ? 'block' : 'none';
+      naechstesItem();
+    });
+  });
+
+  document.getElementById('wortartFilter').addEventListener('change', e => {
+    currentWortart = e.target.value; seenCount = 0; naechstesItem();
+  });
+  document.getElementById('klasseFilter').addEventListener('change', e => {
+    currentKlasse = e.target.value; seenCount = 0; naechstesItem();
+  });
+  document.getElementById('numerusFilter').addEventListener('change', e => {
+    currentNumerus = e.target.value; seenCount = 0; naechstesItem();
+  });
+  document.getElementById('goalSelect').addEventListener('change', e => {
+    dailyStats.goal = parseInt(e.target.value, 10); saveDailyStats(); renderDailyGoal();
+  });
+  document.getElementById('resetLink').addEventListener('click', e => {
+    e.preventDefault();
+    if (confirm('Wirklich den Fortschritt in Nōmina zurücksetzen?')){
+      try { localStorage.removeItem(STORAGE_KEY); } catch(err) {}
+      progress = {}; renderStageBar();
+    }
+  });
+
+  function initNachLaden(){
+    try { progress = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) { progress = {}; }
+    dailyStats = loadDailyStats();
+    document.getElementById('goalSelect').value = String(dailyStats.goal);
+    renderDailyGoal();
+    document.getElementById('totalCount').textContent =
+      `${NOMINA.substantive.length} Substantive · ${NOMINA.adjektive.length} Adjektive · Formen werden live erzeugt`;
+    renderStageBar();
+    naechstesItem();
+  }
+
+  ladeDaten();
+</script>
+</body>
+</html>
