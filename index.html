@@ -39,6 +39,38 @@
     letter-spacing:.03em; margin-top:auto; padding-top:10px;
     border-top:1px solid var(--wand-tief);
   }
+  /* Die Ehrentafel ist kein Werkzeug, sondern der Blick zurueck auf das
+     Geleistete. Sie sitzt deshalb quer unter der Bronzetafel, vor den drei
+     Uebungskacheln, und traegt Gold statt Pompejanisch-Rot. */
+  .ehrentafel{
+    display:flex; align-items:center; gap:clamp(14px,2.5vw,26px); flex-wrap:wrap;
+    width:100%; max-width:940px; margin-bottom:20px; padding:16px clamp(18px,3vw,26px);
+    background:linear-gradient(135deg, var(--putz-hell), #efe1bd);
+    border:var(--rand); border-top:5px solid var(--gold); border-radius:10px;
+    box-shadow:var(--schatten); text-decoration:none; color:var(--ink);
+    transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .ehrentafel:hover{ transform:translateY(-2px); box-shadow:var(--schatten-tief); }
+  .ehrentafel-lorbeer{
+    width:clamp(44px,6vw,62px); aspect-ratio:1; flex-shrink:0;
+    background:url('assets/ui/lorbeer.png') center / contain no-repeat;
+  }
+  .ehrentafel-text{ flex:1 1 260px; }
+  .ehrentafel-titel{
+    font-family:var(--font-display); font-weight:700; font-size:clamp(19px,2.4vw,23px);
+    letter-spacing:.04em; color:var(--pompeji); margin-bottom:3px;
+  }
+  .ehrentafel-unter{ font-size:15px; line-height:1.45; color:var(--ink); }
+  .ehrentafel-knopf{
+    flex-shrink:0;
+    background-color:var(--pompeji); background-image:url('assets/ui/porphyr.jpg');
+    background-size:260px auto; background-position:center;
+    color:var(--marmor); border:2px solid #6d1f1f;
+    font-family:var(--font-display); font-weight:700; font-size:14px;
+    letter-spacing:.08em; text-transform:uppercase;
+    padding:10px 24px; border-radius:24px; box-shadow:var(--schatten);
+  }
+  .ehrentafel:hover .ehrentafel-knopf{ filter:brightness(1.14); }
   .fusszeile{
     font-family:var(--font-mono); font-size:11px; color:var(--ink-soft);
     margin-top:clamp(28px,5vh,48px); text-align:center; max-width:560px; line-height:1.7;
@@ -55,6 +87,16 @@
     <div class="kopf-unter">Wortschatz, Verb- und Nominalformen</div>
   </div>
   <div class="trenner"></div>
+
+  <a class="ehrentafel" href="./achievements.html">
+    <div class="ehrentafel-lorbeer"></div>
+    <div class="ehrentafel-text">
+      <div class="ehrentafel-titel">Errungenschaften</div>
+      <div class="ehrentafel-unter">Bronze, Silber, Gold, Diamant — dein Lernfortschritt in Vocābula, Verba und Nōmina auf einen Blick.</div>
+    </div>
+    <span class="ehrentafel-knopf">Ansehen</span>
+  </a>
+
 
   <div class="gitter">
     <a class="kachel" href="./wortschatz.html">
@@ -75,11 +117,6 @@
       <div class="kachel-meta">565 Substantive · 223 Adjektive</div>
     </a>
 
-    <a class="kachel" href="./achievements.html">
-      <div class="kachel-titel">Errungenschaften</div>
-      <div class="kachel-text">Bronze, Silber, Gold, Diamant — dein Lernfortschritt in Vocābula, Verba und Nōmina auf einen Blick.</div>
-      <div class="kachel-meta">basiert auf deinem gespeicherten Fortschritt</div>
-    </a>
   </div>
 
   <p class="fusszeile">Der Lernfortschritt wird auf diesem Gerät im Browser gespeichert.</p>
