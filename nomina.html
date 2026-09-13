@@ -498,7 +498,6 @@
 
   function initNachLaden(){
     try { progress = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) { progress = {}; }
-    Gesamtzaehler.start(GESAMT_KEY, Object.keys(progress).length);
     dailyStats = loadDailyStats();
     document.getElementById('goalSelect').value = String(dailyStats.goal);
     renderDailyGoal();

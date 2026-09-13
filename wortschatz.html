@@ -958,7 +958,6 @@
 
     dailyStats = loadDailyStats();
     weekStats = loadWeekStats();
-    Gesamtzaehler.start(GESAMT_KEY, Object.keys(progress).length);
     document.getElementById('goalSelect').value = String(dailyStats.goal);
     document.getElementById('weekGoalSelect').value = String(weekStats.goal);
     renderDailyGoal();

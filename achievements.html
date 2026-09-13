@@ -207,11 +207,9 @@
       Gesamtzaehler.stand("nomina-gesamt")
     ];
     const karten = g.reduce((s, x) => s + x.karten, 0);
-    // "mindestens", solange ein Zaehler mit dem Startwert vorbelegt wurde
-    const vorzeichen = g.some(x => x.geschaetzt) ? "mind. " : "";
 
     return `KW ${isoWoche(heute)} · ${datum} · neu ${woche.count}/${woche.goal}${zielErreicht}`
-         + ` · gespielt ${vorzeichen}${karten}`
+         + ` · gespielt ${karten}`
          + ` · Vocābula ${vAusw.geuebt}/${vAusw.sicher}`
          + ` · Verba ${fAusw.geuebt}/${fAusw.sicher}`
          + ` · Nōmina ${nAusw.geuebt}/${nAusw.sicher}`;

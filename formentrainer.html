@@ -1078,7 +1078,6 @@
 
   function init(){
     progress = loadProgress();
-    Gesamtzaehler.start(GESAMT_KEY, Object.keys(progress).length);
     dailyStats = loadDailyStats();
     document.getElementById('goalSelect').value = String(dailyStats.goal);
     renderDailyGoal();
