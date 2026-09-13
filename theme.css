@@ -128,7 +128,7 @@ body {
 .saeule-links, .saeule-rechts {
     position: fixed; bottom: 0; width: 24vh; height: 100vh;
     background: url('assets/ui/saeule.png') bottom center / auto 100% no-repeat;
-    pointer-events: none; z-index: -1; opacity: .55;
+    pointer-events: none; z-index: -1;
 }
 .saeule-links  { left: 0; }
 .saeule-rechts { right: 0; transform: scaleX(-1); }
