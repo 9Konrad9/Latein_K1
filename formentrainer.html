@@ -281,6 +281,7 @@
     </div>
   </div>
 
+<script src="fortschritt.js"></script>
 <script>
   let VERBEN_ALLE = { regelmaessig: [], unregelmaessig: [] };
 
@@ -709,6 +710,7 @@
 
   // --- Tagesziel (gleiches Prinzip wie im Wortschatz-Trainer) ---
   const DAILY_KEY = "formentrainer-tagesstatistik";
+  const GESAMT_KEY = "formentrainer-gesamt";   // lebenslang, wird nie zurueckgesetzt
   let dailyStats = { date: "", count: 0, goal: 20 };
 
   function todayStr(){
@@ -840,6 +842,7 @@
     currentItem.stage = correct ? Math.min(4, currentItem.stage + 1) : 0;
     progress[currentItem.id] = currentItem.stage;
     saveProgress();
+    Gesamtzaehler.zaehl(GESAMT_KEY);
     dailyStats.count++;
     saveDailyStats();
     renderDailyGoal();
@@ -1006,6 +1009,7 @@
     else currentItem.stage = Math.min(4, currentItem.stage + delta);
     progress[currentItem.id] = currentItem.stage;
     saveProgress();
+    Gesamtzaehler.zaehl(GESAMT_KEY);
     dailyStats.count++;
     saveDailyStats();
     renderDailyGoal();
@@ -1029,6 +1033,7 @@
     else currentItem.stage = Math.min(4, currentItem.stage + delta);
     progress[currentItem.id] = currentItem.stage;
     saveProgress();
+    Gesamtzaehler.zaehl(GESAMT_KEY);
     dailyStats.count++;
     saveDailyStats();
     renderDailyGoal();
@@ -1073,6 +1078,7 @@
 
   function init(){
     progress = loadProgress();
+    Gesamtzaehler.start(GESAMT_KEY, Object.keys(progress).length);
     dailyStats = loadDailyStats();
     document.getElementById('goalSelect').value = String(dailyStats.goal);
     renderDailyGoal();

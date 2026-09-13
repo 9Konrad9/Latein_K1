@@ -368,6 +368,7 @@
     <span style="display:inline-block; margin-top:8px; line-height:1.6;">Seneca-Wortschatz nach <a href="https://www.schule-bw.de/faecher-und-schularten/sprachen-und-literatur/latein/sprache/materialien-zur-sprache-senecas/senecas-wortschatz.html" target="_blank" rel="noopener">„Senecas Wortschatz"</a>, Landesbildungsserver Baden-Württemberg, auf Basis einer Ausarbeitung von Karlheinz Glaser — <a href="https://creativecommons.org/licenses/by/4.0/deed.de" target="_blank" rel="noopener">CC BY 4.0</a>, bearbeitet.</span>
   </p>
 
+<script src="fortschritt.js"></script>
 <script>
   let ALL_WORDS = [];
 
@@ -393,6 +394,7 @@
   //   Tagesziel  = Karten von Wörtern, die schon bekannt sind (Wiederholung)
   const DAILY_KEY = "latein-arena-kursstufe-tagesstatistik";
   const WEEK_KEY  = "latein-arena-kursstufe-wochenstatistik";
+  const GESAMT_KEY = "latein-arena-kursstufe-gesamt";   // lebenslang, wird nie zurueckgesetzt
   const DAILY_DEFAULT = 10;   // Wiederholungen pro Tag
   const WEEK_DEFAULT  = 24;   // neue Vokabeln pro Woche = 4 Wochenstunden a 6
   let dailyStats = { date: "", count: 0, goal: DAILY_DEFAULT };
@@ -461,6 +463,7 @@
   // Genau ein Zähler pro Antwort. warNeu muss VOR dem Schreiben von progress[id]
   // ermittelt werden, sonst ist jedes Wort sofort "bekannt".
   function verbucheAntwort(warNeu){
+    Gesamtzaehler.zaehl(GESAMT_KEY);   // jede gespielte Karte, neu wie wiederholt
     if (warNeu){ weekStats.count++; saveWeekStats(); renderWeekGoal(); }
     else { dailyStats.count++; saveDailyStats(); renderDailyGoal(); }
   }
@@ -955,6 +958,7 @@
 
     dailyStats = loadDailyStats();
     weekStats = loadWeekStats();
+    Gesamtzaehler.start(GESAMT_KEY, Object.keys(progress).length);
     document.getElementById('goalSelect').value = String(dailyStats.goal);
     document.getElementById('weekGoalSelect').value = String(weekStats.goal);
     renderDailyGoal();

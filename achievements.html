@@ -43,6 +43,36 @@
     overflow:hidden; margin-top:12px; border:1px solid var(--bronze); }
   .balken-fuell{ height:100%; background:var(--pompeji); transition:width .4s ease; }
 
+  /* Abgabe: eine Zeile zum Kopieren, gedacht fuer das eigene OneNote-Blatt.
+     Bewusst menschenlesbar statt verschluesselt -- die Lehrkraft soll sie
+     ueberfliegen koennen, ohne etwas entschluesseln zu muessen. */
+  .abgabe{
+    width:100%; max-width:980px; margin-top:clamp(24px,4vh,38px);
+    padding:20px clamp(18px,3vw,26px);
+    background:var(--putz); border:var(--rand); border-top:5px solid var(--bronze);
+    border-radius:10px; box-shadow:var(--schatten); text-align:center;
+  }
+  .abgabe-titel{ font-family:var(--font-display); font-weight:700; font-size:19px;
+    color:var(--pompeji); margin-bottom:4px; }
+  .abgabe-text{ font-size:15px; color:var(--ink); margin-bottom:14px; }
+  .abgabe-code{
+    display:block; font-family:var(--font-mono); font-size:clamp(11px,1.4vw,13px);
+    line-height:1.6; color:var(--ink); background:var(--putz-hell);
+    border:1px dashed var(--bronze); border-radius:8px;
+    padding:12px 14px; margin-bottom:14px; word-break:break-word; user-select:all;
+  }
+  .abgabe-btn{
+    background-color:var(--pompeji); background-image:url('assets/ui/porphyr.jpg');
+    background-size:260px auto; background-position:center;
+    color:var(--marmor); border:2px solid #6d1f1f;
+    font-family:var(--font-display); font-weight:700; font-size:14px;
+    letter-spacing:.08em; text-transform:uppercase;
+    padding:11px 28px; border-radius:24px; box-shadow:var(--schatten); cursor:pointer;
+  }
+  .abgabe-btn:hover{ filter:brightness(1.14); transform:translateY(-1px); }
+  .abgabe-btn.fertig{ background-image:none; background-color:var(--richtig); border-color:#1f4d27; }
+  .abgabe-legende{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft);
+    margin-top:12px; line-height:1.6; }
   .fusszeile{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft);
     margin-top:clamp(30px,5vh,48px); text-align:center; max-width:520px; line-height:1.7; }
 </style>
@@ -63,8 +93,19 @@
 
   <div class="gitter" id="grid"></div>
 
+  <div class="abgabe">
+    <div class="abgabe-titel">Stand abgeben</div>
+    <div class="abgabe-text">Kopiere die Zeile und füge sie in dein OneNote-Blatt ein.</div>
+    <code class="abgabe-code" id="abgabeCode">—</code>
+    <button class="abgabe-btn" id="abgabeBtn">Zeile kopieren</button>
+    <div class="abgabe-legende" id="abgabeLegende">
+      Die Zahlenpaare heißen: geübte Einträge / davon auf Stufe „sicher“.
+    </div>
+  </div>
+
   <p class="fusszeile">Der Fortschritt wird im Browser dieses Geräts gespeichert. Auf einem anderen Gerät oder nach dem Löschen der Browserdaten beginnt die Zählung neu.</p>
 
+<script src="fortschritt.js"></script>
 <script>
   const TIERS = [
     {name:"Bronze",  key:"bronze",  bild:"assets/achievements/badge_bronze.png"},
@@ -135,6 +176,67 @@
       <div class="balken"><div class="balken-fuell" style="width:${pct}%"></div></div>
     `;
     grid.appendChild(karte);
+  });
+
+  // --- Abgabezeile ---------------------------------------------------------
+  // Eine Zeile, die die Schueler in ihr OneNote kopieren. Bewusst lesbar statt
+  // kodiert: die Lehrkraft soll die Spalte ueberfliegen koennen.
+  const WOCHE_KEY = "latein-arena-kursstufe-wochenstatistik";
+
+  // ISO-8601-Kalenderwoche, wie im Vokabeltrainer
+  function isoWoche(d){
+    const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const wochentag = t.getUTCDay() || 7;
+    t.setUTCDate(t.getUTCDate() + 4 - wochentag);
+    const jahresbeginn = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    return Math.ceil(((t - jahresbeginn) / 86400000 + 1) / 7);
+  }
+
+  function abgabezeile(){
+    const heute = new Date();
+    const datum = String(heute.getDate()).padStart(2, "0") + "." +
+                  String(heute.getMonth() + 1).padStart(2, "0") + "." + heute.getFullYear();
+
+    let woche = { count: 0, goal: 24 };
+    try { const roh = localStorage.getItem(WOCHE_KEY); if (roh) woche = JSON.parse(roh); } catch(e) {}
+    const zielErreicht = woche.count >= woche.goal ? " ✓" : "";
+
+    const g = [
+      Gesamtzaehler.stand("latein-arena-kursstufe-gesamt"),
+      Gesamtzaehler.stand("formentrainer-gesamt"),
+      Gesamtzaehler.stand("nomina-gesamt")
+    ];
+    const karten = g.reduce((s, x) => s + x.karten, 0);
+    // "mindestens", solange ein Zaehler mit dem Startwert vorbelegt wurde
+    const vorzeichen = g.some(x => x.geschaetzt) ? "mind. " : "";
+
+    return `KW ${isoWoche(heute)} · ${datum} · neu ${woche.count}/${woche.goal}${zielErreicht}`
+         + ` · gespielt ${vorzeichen}${karten}`
+         + ` · Vocābula ${vAusw.geuebt}/${vAusw.sicher}`
+         + ` · Verba ${fAusw.geuebt}/${fAusw.sicher}`
+         + ` · Nōmina ${nAusw.geuebt}/${nAusw.sicher}`;
+  }
+
+  const zeile = abgabezeile();
+  document.getElementById('abgabeCode').textContent = zeile;
+
+  document.getElementById('abgabeBtn').addEventListener('click', async (e) => {
+    const knopf = e.currentTarget;
+    try {
+      await navigator.clipboard.writeText(zeile);
+      knopf.textContent = "Kopiert ✓"; knopf.classList.add('fertig');
+    } catch(err) {
+      // Kein Zugriff auf die Zwischenablage: manche Umgebungen verweigern die
+      // Berechtigung grundsaetzlich. Dann wenigstens die Zeile markieren -- die
+      // Flaeche traegt user-select:all, ein Tippen erfasst also alles, und das
+      // Geraet bietet von selbst "Kopieren" an.
+      const bereich = document.createRange();
+      bereich.selectNodeContents(document.getElementById('abgabeCode'));
+      const auswahl = window.getSelection();
+      auswahl.removeAllRanges(); auswahl.addRange(bereich);
+      knopf.textContent = "markiert – jetzt kopieren";
+    }
+    setTimeout(() => { knopf.textContent = "Zeile kopieren"; knopf.classList.remove('fertig'); }, 2500);
   });
 </script>
 </body>
