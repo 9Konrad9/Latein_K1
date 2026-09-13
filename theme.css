@@ -195,15 +195,29 @@ body {
     .saeule-links, .saeule-rechts { display: none; }
 }
 
-/* ---------- Zurueck-Verweis ---------- */
+/* ---------- Zurueck-Verweis ----------
+   Er trug bisher nur graue Schrift ohne Flaeche und war dadurch kaum als
+   Schaltflaeche zu erkennen. Jetzt eine eigene Taefelchen-Flaeche. */
 .zurueck {
     align-self: flex-start;
     font-family: var(--font-mono); font-size: 11px;
     color: var(--ink-soft); text-decoration: none;
-    padding: 4px 10px; border-radius: 6px;
-    border: 1px solid transparent;
+    padding: 5px 13px; border-radius: 16px;
+    border: 1px solid var(--bronze);
+    background: var(--putz);
+    box-shadow: var(--schatten);
+    position: relative; z-index: 1;
+    transition: background .15s, color .15s;
 }
-.zurueck:hover { color: var(--pompeji); border-color: var(--bronze); background: var(--putz); }
+.zurueck:hover { color: var(--pompeji); background: var(--putz-hell); }
+
+/* Ab 1241 px erscheinen die Saeulen -- und der Verweis stand dann komplett
+   hinter der linken (gemessen: Verweis 16..110 px, Saeule 0..215 px), war also
+   nur durch Zufall zu finden. Der Einzug folgt derselben Breite wie die Saeule,
+   damit er bei jeder Fensterhoehe daran vorbeikommt. */
+@media (min-width: 1241px) {
+    .zurueck { margin-left: calc(24vh + 14px); }
+}
 
 /* ---------- Knoepfe ----------
    Handlungsflaechen tragen Porphyr, den purpurroten Kaiserstein. Die Kachel
