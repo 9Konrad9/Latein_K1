@@ -15,7 +15,6 @@
   .subcount{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); margin-bottom:14px; }
 
   /* ---------- Ziele ---------- */
-  .goal-stack{ display:flex; flex-direction:column; gap:7px; align-items:center; margin-bottom:16px; width:100%; }
   .daily-goal{
     display:flex; align-items:center; gap:10px;
     width:clamp(320px, 58vw, 760px); flex-wrap:wrap; justify-content:center;
@@ -194,10 +193,9 @@
     <h1>Vocābula</h1>
     <div class="kopf-unter">Kursstufe K1</div>
   </div>
-  <div class="trenner"></div>
   <div class="subcount" id="totalCount"></div>
 
-  <div class="goal-stack">
+  <div class="ziel-tafel">
     <div class="daily-goal neu" id="weekGoal">
       <div class="daily-goal-text" id="weekGoalText">Diese Woche neu: 0 / 24</div>
       <div class="daily-goal-bar"><div class="daily-goal-fill" id="weekGoalFill" style="width:0%"></div></div>

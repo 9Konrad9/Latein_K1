@@ -109,16 +109,23 @@ body {
     color: #ddd3b8; margin-top: 2px; text-align: center;
 }
 
-/* ---------- Maeander-Trenner ----------
-   Kachelt waagerecht; die Vorlage ist gespiegelt aufgebaut, die Naht sitzt
-   deshalb exakt. */
-.trenner {
-    width: 100%; max-width: 760px; height: 26px;
-    background: url('assets/ui/maeander.jpg') left center / auto 100% repeat-x;
-    border-top: 1px solid var(--bronze);
-    border-bottom: 1px solid var(--bronze);
-    margin: 6px auto 18px;
+
+/* ---------- Zieltafel ----------
+   Die Fortschrittsbalken gingen vor der Mauertextur unter. Sie sitzen deshalb
+   auf einem Pergamentstreifen, der sie vom Grund abhebt. Das Bild misst
+   900x190; border-image schneidet die gerollten Enden ab und dehnt nur die
+   Mitte, damit der Streifen bei jeder Breite richtig aussieht. */
+.ziel-tafel{
+    display:flex; flex-direction:column; align-items:center; gap:9px;
+    width:clamp(320px, 58vw, 760px);
+    margin-bottom:18px; padding:9px clamp(12px, 2.2vw, 26px);
+    background:#f6ecd4;
+    border:15px solid transparent;
+    border-image:url('assets/ui/pergament.png') 24 fill stretch;
+    filter:drop-shadow(0 6px 16px rgba(80, 60, 30, .24));
 }
+/* Die Balken selbst bringen ihre eigene Breite mit -- in der Tafel gilt deren Breite. */
+.ziel-tafel .daily-goal{ width:100%; margin-bottom:0; }
 
 /* ---------- Saeulen am Seitenrand ----------
    Reiner Zierrat hinter dem Inhalt, ohne Klickflaeche. Das Bild misst 200x860
