@@ -123,9 +123,15 @@ body {
    angeschnittenen Enden und ohne die beiden dunklen Falzlinien bei x=45 und
    x=855. Die gewellte Ober- und Unterkante bleibt dabei erhalten. */
 .ziel-tafel{
+    /* Einmal zentral, damit Tafel und Staebe denselben Wert benutzen. */
+    --rolle: clamp(27px, 3.6vw, 37px);
+    --knauf: calc(var(--rolle) * 112 / 150);
     display:flex; align-items:stretch;
     width:clamp(320px, 58vw, 760px);
-    margin-bottom:18px;
+    /* Die Knaeufe ragen ueber das Blatt hinaus. Der Aussenabstand faengt diesen
+       Ueberstand auf, sonst reichen sie auf schmalen Geraeten in die Zeile
+       darueber und in die Reiter darunter. */
+    margin:var(--knauf) 0 calc(18px + var(--knauf));
     filter:drop-shadow(0 6px 16px rgba(80, 60, 30, .26));
 }
 /* Die Rollenstaebe als border-image: die Knaeufe sind die oberen und unteren
@@ -137,23 +143,30 @@ body {
    Gemessene Zonen: links Schaft ab Zeile 112 bis 541 (Bild 150x654),
    rechts ab 98 bis 535 (Bild 150x636). */
 .ziel-rolle{
-    --rolle: clamp(27px, 3.6vw, 37px);
     flex:0 0 auto;
     width:var(--rolle);
     align-self:stretch;
-    margin:-13px 0;
     border-style:solid; border-color:transparent;
     background:none;
 }
+/* Der Ueberstand entspricht genau der Knaufhoehe. Dadurch ist der Schaft so
+   hoch wie das Blatt -- so wie bei einer echten Rolle, um die das Pergament
+   gewickelt ist -- und die Knaeufe stehen vollstaendig darueber und darunter.
+   Vorher war der Ueberstand fest auf 13 px gesetzt, sodass die Knaeufe zur
+   Haelfte neben dem Blatt steckten statt darueber. */
 .ziel-rolle.links{
-    border-width:calc(var(--rolle) * 112 / 150) 0;
+    --knauf-oben: calc(var(--rolle) * 112 / 150);
+    --knauf-unten: var(--knauf-oben);
+    border-width:var(--knauf-oben) 0 var(--knauf-unten);
     border-image:url('assets/ui/rolle-links.png') 112 0 fill stretch;
-    margin-right:-3px;
+    margin:calc(-1 * var(--knauf-oben)) -3px calc(-1 * var(--knauf-unten)) 0;
 }
 .ziel-rolle.rechts{
-    border-width:calc(var(--rolle) * 98 / 150) 0 calc(var(--rolle) * 100 / 150);
+    --knauf-oben: calc(var(--rolle) * 98 / 150);
+    --knauf-unten: calc(var(--rolle) * 100 / 150);
+    border-width:var(--knauf-oben) 0 var(--knauf-unten);
     border-image:url('assets/ui/rolle-rechts.png') 98 0 100 0 fill stretch;
-    margin-left:-3px;
+    margin:calc(-1 * var(--knauf-oben)) 0 calc(-1 * var(--knauf-unten)) -3px;
 }
 .ziel-mitte{
     flex:1 1 auto; min-width:0;
