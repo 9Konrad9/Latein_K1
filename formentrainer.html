@@ -4,160 +4,170 @@
 <meta charset="UTF-8">
 <title>Formentrainer · Latein-Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
 <style>
-  :root{
-    --bg-deep:#161d18; --bg-panel:#1f2b22;
-    --bronze-1:#3d4a3a; --bronze-2:#5c6b4f;
-    --gold:#c9a961; --parchment:#e9e2d0; --parchment-dim:#a9a894;
-    --stage-red:#b5533c; --stage-yellow:#c9a961; --stage-green:#6b8f5c;
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0; min-height:100dvh;
-    background:
-      radial-gradient(ellipse at 20% -10%, #24322650 0%, transparent 55%),
-      radial-gradient(ellipse at 100% 100%, #2a1f1650 0%, transparent 50%),
-      var(--bg-deep);
-    color:var(--parchment); font-family:'Crimson Pro', serif;
-    display:flex; flex-direction:column; align-items:center;
-    padding:clamp(12px,3vh,32px) clamp(10px,3vw,16px) clamp(20px,5vh,60px);
-  }
-  .eyebrow{ font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.16em;
-    text-transform:uppercase; color:var(--parchment-dim); margin-bottom:6px; }
-  h1{ font-family:'Cinzel', serif; font-weight:700; font-size:clamp(26px,4.5vw,44px);
-    letter-spacing:.03em; margin:0 0 6px; text-align:center; }
-  .subcount{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--parchment-dim); margin-bottom:16px; }
+  /* Seitenspezifisches. Palette, Kopftafel, Reiter und Balken kommen aus
+     theme.css -- hier steht nur, was es nur im Formentrainer gibt. */
+
+  .subcount{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); margin-bottom:14px; }
 
   .daily-goal{
     display:flex; align-items:center; gap:10px; margin-bottom:16px;
-    width:clamp(320px, 55vw, 720px); flex-wrap:wrap; justify-content:center;
+    width:clamp(320px, 58vw, 760px); flex-wrap:wrap; justify-content:center;
   }
-  .daily-goal-text{
-    font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--parchment-dim);
-    white-space:nowrap;
-  }
+  .daily-goal-text{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); white-space:nowrap; }
   .daily-goal-bar{
-    flex:1; min-width:120px; height:8px; border-radius:4px; background:#00000040;
-    overflow:hidden; border:1px solid #ffffff14;
+    flex:1; min-width:120px; height:10px; border-radius:5px;
+    background:var(--wand-tief); overflow:hidden; border:1px solid var(--bronze);
   }
-  .daily-goal-fill{
-    height:100%; background:linear-gradient(90deg, var(--stage-red), var(--stage-yellow), var(--stage-green));
-    transition:width .4s ease;
+  .daily-goal-fill{ height:100%; background:var(--pompeji); transition:width .4s ease; }
+  .daily-goal.reached .daily-goal-text{
+    color:var(--richtig); font-weight:600;
+    background:url('assets/ui/lorbeer.png') left center / 18px auto no-repeat; padding-left:23px;
   }
-  .daily-goal.reached .daily-goal-text{ color:var(--stage-green); }
   #goalSelect{ font-size:10px; padding:4px 8px; }
 
-  .modetabs{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; justify-content:center; }
+  .modetabs{ display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; justify-content:center; }
   .modetab{
-    font-family:'JetBrains Mono', monospace; font-size:12px; padding:8px 16px;
-    border-radius:20px; border:1px solid #ffffff20; background:#00000030;
-    color:var(--parchment-dim); cursor:pointer; transition:all .2s;
+    font-family:var(--font-mono); font-size:12px; padding:8px 16px; border-radius:20px;
+    border:1px solid var(--bronze); background:var(--putz); color:var(--ink-soft);
+    cursor:pointer; transition:all .18s; user-select:none;
   }
-  .modetab.active{ background:var(--bronze-2); color:#fff; border-color:var(--bronze-2); }
-
-  .filterbar{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; justify-content:center; max-width:720px; }
-  select{
-    font-family:'JetBrains Mono', monospace; font-size:12px; padding:8px 12px;
-    border-radius:8px; border:1px solid #ffffff20; background:#00000030; color:var(--parchment);
+  .modetab:hover{ background:var(--putz-hell); color:var(--ink); }
+  .modetab.active{
+    background-color:var(--pompeji);
+    background-image:url('assets/ui/porphyr.jpg'); background-size:260px auto;
+    color:var(--marmor); border-color:#6d1f1f; box-shadow:var(--schatten);
   }
-  select option{ background:#1f2b22; color:var(--parchment); }
-  select:disabled{ opacity:.35; cursor:not-allowed; }
 
-  .stage-bar{ display:flex; gap:10px; margin-bottom:22px; font-family:'JetBrains Mono', monospace; font-size:12px; }
-  .stage-chip{ display:flex; align-items:center; gap:6px; padding:5px 10px; border-radius:20px;
-    background:#00000030; border:1px solid #ffffff14; color:var(--parchment-dim); }
-  .dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+  .filterbar{ display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; justify-content:center; }
 
-  .arena{ position:relative; width:clamp(320px, 55vw, 720px); height:clamp(220px, 42vh, 420px);
-    perspective:1400px; margin-bottom:clamp(12px,3vh,22px); }
+  .stage-bar{ display:flex; gap:9px; margin-bottom:16px; font-family:var(--font-mono); font-size:12px; flex-wrap:wrap; justify-content:center; }
+  .stage-chip{
+    display:flex; align-items:center; gap:6px; padding:4px 11px 4px 5px; border-radius:20px;
+    background:var(--putz); border:1px solid var(--bronze); color:var(--ink);
+  }
+  .dot{ width:17px; height:17px; border-radius:50%; display:inline-block;
+    background-size:contain; background-repeat:no-repeat; background-position:center; }
+  .dot.rot{   background-image:url('assets/ui/muenze-bronze.png'); }
+  .dot.gelb{  background-image:url('assets/ui/muenze-silber.png'); }
+  .dot.gruen{ background-image:url('assets/ui/muenze-gold.png'); }
+
+  .counter{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); margin-bottom:8px; }
+
+  /* ---------- Karte ----------
+     Wie im Vokabeltrainer: Marmortafel als Inschrift, Pergament als Aufloesung.
+     border-image statt Hintergrundbild, damit der Zierrand bei abweichendem
+     Seitenverhaeltnis nicht oben und unten dicker wird als an den Seiten. */
+  .arena{ position:relative; width:clamp(320px, 58vw, 760px); height:clamp(200px, 34vh, 330px);
+    perspective:1500px; margin-bottom:clamp(12px,3vh,20px); }
   .card{ position:absolute; inset:0; cursor:pointer; transform-style:preserve-3d;
     transition:transform .6s cubic-bezier(.2,.8,.2,1); }
   .card.flipped{ transform:rotateY(180deg); }
   .card.no-flip{ cursor:default; }
-  .face{ position:absolute; inset:0; backface-visibility:hidden; border-radius:14px;
+  .arena-kompakt{ height:auto; margin-bottom:14px; perspective:none; }
+  .arena-kompakt .card, .arena-kompakt .face{ position:relative; }
+  .face{
+    position:absolute; inset:0; backface-visibility:hidden;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    padding:clamp(14px,4vw,22px); text-align:center; border:1px solid #ffffff1a;
-    box-shadow:0 20px 50px -20px #000000aa, inset 0 1px 0 #ffffff10; }
-  .face.front{ background:linear-gradient(155deg, var(--bronze-2), var(--bronze-1) 70%);
-    border-radius:14px 34px 14px 34px; }
-  .face.back{ background:linear-gradient(155deg, #2a241a, #1c1712 70%);
-    transform:rotateY(180deg); border-radius:34px 14px 34px 14px; }
-  .latin-word{ font-family:'Crimson Pro', serif; font-weight:700; font-size:clamp(28px,4vw,48px);
-    letter-spacing:.01em; color:var(--parchment); text-transform:none; }
-  .meta-tag{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--parchment-dim);
-    margin-top:10px; letter-spacing:.04em; }
-  .back-bed{ font-size:clamp(19px,3vw,28px); line-height:1.35; color:var(--gold); }
-  .back-lemma{ font-family:'JetBrains Mono', monospace; font-size:12px; color:#ffffff55; margin-top:12px; }
-  .hint{ position:absolute; bottom:10px; font-family:'JetBrains Mono', monospace; font-size:10px; color:#00000055; }
-  .face.back .hint{ color:#ffffff33; }
+    padding:clamp(18px,3.5vw,30px); text-align:center;
+    filter:drop-shadow(0 8px 20px rgba(80,60,30,.26));
+  }
+  .face.front{ background:var(--marmor); border:26px solid transparent;
+    border-image:url('assets/ui/marmor.png') 44 fill stretch; }
+  .face.back{ transform:rotateY(180deg); background:#f6ecd4; border:18px solid transparent;
+    border-image:url('assets/ui/pergament.png') 26 fill stretch; }
+  .latin-word{ font-family:var(--font-display); font-weight:700;
+    font-size:clamp(24px,3.5vw,42px); letter-spacing:.02em; color:var(--ink); }
+  .meta-tag{ font-family:var(--font-mono); font-size:10px; color:var(--ink-soft);
+    margin-top:10px; letter-spacing:.05em; }
+  .back-bed{ font-size:clamp(17px,2.6vw,28px); line-height:1.35; color:var(--pompeji); font-weight:600; }
+  .back-lemma{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); margin-top:10px; }
+  /* Die Bausteinzeile stand auf Gold (#b8912f) -- auf Pergament sind das 2,9.
+     Bronzebraun kommt auf 5,6. */
+  .bausteine-zeile{ font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); margin-top:8px; }
+  .hint{ position:absolute; bottom:12px; font-family:var(--font-mono); font-size:10px; color:var(--ink-soft); opacity:.7; }
 
-  /* Multiple Choice */
-  .mc-options{ display:flex; flex-direction:column; gap:10px; width:clamp(320px,55vw,720px); margin-bottom:14px; }
+  .rate-prompt{ font-family:var(--font-body); font-style:italic; font-size:15px;
+    color:var(--ink-soft); margin:0 0 10px; text-align:center; }
+  .controls{ display:flex; gap:10px; margin-bottom:8px; flex-wrap:wrap; justify-content:center; }
+  .controls button{ font-family:var(--font-mono); font-size:clamp(12px,1.4vw,14px);
+    padding:10px 20px; border-radius:8px; border:2px solid var(--bronze);
+    background:var(--putz); color:var(--ink); cursor:pointer; }
+  .controls button:hover{ background:var(--putz-hell); transform:translateY(-1px); }
+  button.again{ border-color:var(--stufe-rot);   color:var(--stufe-rot); }
+  button.hard{  border-color:var(--stufe-gelb);  color:var(--stufe-gelb); }
+  button.good{  border-color:var(--stufe-gruen); color:var(--stufe-gruen); }
 
+  .mc-options{ display:flex; flex-direction:column; gap:9px; width:clamp(320px,58vw,760px); margin-bottom:14px; }
+  .mc-btn{
+    font-family:var(--font-body); font-size:clamp(15px,1.9vw,18px); padding:13px 18px;
+    border-radius:9px; border:1px solid var(--bronze); background:var(--putz); color:var(--ink);
+    cursor:pointer; text-align:left; transition:background .15s, border-color .15s;
+  }
+  .mc-btn:hover:not(:disabled){ background:var(--putz-hell); border-color:var(--pompeji); }
+  .mc-btn.correct{ border:2px solid var(--richtig); background:#dcecd8; color:#1f4d27; font-weight:600; }
+  .mc-btn.wrong{   border:2px solid var(--falsch);  background:#f4dad6; color:#7d1f1f; }
+  .mc-btn:disabled{ cursor:default; }
+
+  /* ---------- Membra ----------
+     Die Bausteine liegen als Taefelchen auf dem Tisch, die Luecken sind
+     gestrichelte Abdruecke. Gefuellt wechselt der Rahmen auf Gruen. */
   .membra-slots{
     display:flex; flex-wrap:wrap; gap:8px; justify-content:center;
-    width:clamp(320px,55vw,720px); min-height:56px; margin-bottom:18px;
+    width:clamp(320px,58vw,760px); min-height:58px; margin-bottom:18px;
   }
   .membra-slot{
-    min-width:70px; padding:10px 14px; border-radius:8px;
-    border:2px dashed #ffffff30; background:#00000020;
-    font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--parchment-dim);
+    min-width:74px; padding:9px 14px; border-radius:8px;
+    border:2px dashed var(--bronze); background:rgba(255,255,255,.35);
+    font-family:var(--font-mono); font-size:13px; color:var(--ink-soft);
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
     transition:border-color .2s, background .2s;
   }
-  .membra-slot .slot-text{ font-family:'Crimson Pro', serif; font-size:17px; color:var(--parchment); }
-  .membra-slot .slot-label{ font-size:9px; letter-spacing:.03em; opacity:.8; }
-  .membra-slot.filled{ border-style:solid; border-color:var(--stage-green); background:#6b8f5c25; }
+  .membra-slot .slot-text{ font-family:var(--font-body); font-size:18px; font-weight:600; color:var(--ink); }
+  .membra-slot .slot-label{ font-size:9px; letter-spacing:.03em; color:var(--ink-soft); }
+  .membra-slot.filled{ border-style:solid; border-color:var(--richtig); background:#e4efe2; }
 
   .membra-bank{
     display:flex; flex-wrap:wrap; gap:10px; justify-content:center;
-    width:clamp(320px,55vw,720px); margin-bottom:16px;
+    width:clamp(320px,58vw,760px); margin-bottom:16px;
   }
   .membra-chip{
-    font-family:'Crimson Pro', serif; font-size:18px; padding:10px 18px;
-    border-radius:20px; border:1px solid #ffffff30; background:#00000030; color:var(--parchment);
-    cursor:pointer; transition:background .15s, transform .1s, opacity .2s;
+    font-family:var(--font-body); font-size:18px; font-weight:600; padding:10px 20px;
+    border-radius:20px; border:1px solid var(--bronze); background:var(--putz); color:var(--ink);
+    cursor:pointer; box-shadow:var(--schatten);
+    transition:background .15s, transform .1s, opacity .2s;
   }
-  .membra-chip:hover{ background:#ffffff15; transform:translateY(-1px); }
+  .membra-chip:hover{ background:var(--putz-hell); transform:translateY(-1px); }
   .membra-chip.used{ opacity:0; pointer-events:none; }
-  .membra-chip.shake{ animation:shake .3s; border-color:var(--stage-red); }
+  .membra-chip.shake{ animation:shake .3s; border-color:var(--falsch); color:var(--falsch); }
   @keyframes shake{
     0%,100%{ transform:translateX(0); } 25%{ transform:translateX(-5px); }
     75%{ transform:translateX(5px); }
   }
-  .mc-btn{
-    font-family:'Crimson Pro', serif; font-size:clamp(15px,2vw,18px); padding:14px 18px;
-    border-radius:10px; border:1px solid #ffffff20; background:#00000030; color:var(--parchment);
-    cursor:pointer; text-align:left; transition:background .15s, transform .1s, border-color .15s;
-  }
-  .mc-btn:hover{ background:#ffffff10; }
-  .mc-btn.correct{ border-color:var(--stage-green); background:#6b8f5c30; }
-  .mc-btn.wrong{ border-color:var(--stage-red); background:#b5533c30; }
-  .mc-btn:disabled{ cursor:default; }
 
-  .rate-prompt{ font-family:'Crimson Pro', serif; font-style:italic; font-size:14px;
-    color:var(--parchment-dim); margin:0 0 10px; text-align:center; }
-  .controls{ display:flex; gap:10px; margin-bottom:8px; }
-  button.rate-btn{ font-family:'JetBrains Mono', monospace; font-size:clamp(12px,1.4vw,15px);
-    padding:clamp(9px,1.2vw,13px) clamp(16px,2vw,22px);
-    border-radius:8px; border:1px solid #ffffff20; background:#00000030; color:var(--parchment);
-    cursor:pointer; transition:background .2s, transform .15s; }
-  button.rate-btn:hover{ background:#ffffff10; transform:translateY(-1px); }
-  button.again{ border-color:var(--stage-red); color:var(--stage-red); }
-  button.hard{ border-color:var(--stage-yellow); color:var(--stage-yellow); }
-  button.good{ border-color:var(--stage-green); color:var(--stage-green); }
-
-  .footer-note{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--parchment-dim);
-    margin-top:16px; text-align:center; max-width:460px; line-height:1.6; }
-  .counter{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--parchment-dim); margin-bottom:6px; }
+  .footer-note{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft);
+    margin-top:18px; text-align:center; max-width:460px; line-height:1.6; }
+  .footer-note a{ color:var(--ink-soft); }
+  .footer-note a:hover{ color:var(--pompeji); }
 </style>
 </head>
 <body>
 
-  <a href="./index.html" style="align-self:flex-start; color:var(--parchment-dim); font-family:'JetBrains Mono', monospace; font-size:11px; text-decoration:none; margin-bottom:10px;">← Übersicht</a>
-  <div class="eyebrow">Latein-Arena · Formentrainer</div>
-  <h1>Formae K1</h1>
+  <div class="saeule-links"></div>
+  <div class="saeule-rechts"></div>
+
+  <a class="zurueck" href="./index.html">← Übersicht</a>
+
+  <div class="kopf-tafel">
+    <div class="eyebrow">Latein-Arena</div>
+    <h1>Formae</h1>
+    <div class="kopf-unter">Kursstufe K1</div>
+  </div>
+  <div class="trenner"></div>
   <div class="subcount" id="totalCount"></div>
 
   <div class="daily-goal" id="dailyGoal">
@@ -210,9 +220,9 @@
 
   <!-- Multiple Choice Modus -->
   <div id="mcView">
-    <div class="arena" style="height:clamp(140px,20vh,180px); margin-bottom:14px;">
+    <div class="arena arena-kompakt">
       <div class="card no-flip" id="mcCard">
-        <div class="face front" style="position:relative; transform:none;">
+        <div class="face front">
           <div class="latin-word" id="mcForm">—</div>
           <div class="meta-tag" id="mcLemma">—</div>
         </div>
@@ -232,7 +242,7 @@
         </div>
         <div class="face back">
           <div class="back-bed" id="expBestimmung">—</div>
-          <div class="back-lemma" id="expBausteine" style="color:var(--gold); font-family:'JetBrains Mono', monospace; font-size:12px; margin-top:8px;">—</div>
+          <div class="bausteine-zeile" id="expBausteine">—</div>
           <div class="back-lemma" id="expLemmaBack">—</div>
         </div>
       </div>
@@ -247,9 +257,9 @@
 
   <!-- Membra: Formen in Bausteine zerlegen -->
   <div id="membraView" style="display:none">
-    <div class="arena" style="height:clamp(160px,26vh,220px);">
+    <div class="arena arena-kompakt">
       <div class="card no-flip" id="membraCard">
-        <div class="face front" style="position:relative; transform:none;">
+        <div class="face front">
           <div class="latin-word" id="membraForm">—</div>
           <div class="meta-tag" id="membraLemma">—</div>
         </div>
@@ -766,9 +776,9 @@
     const yellow = stages.filter(s => s === 1 || s === 2).length;
     const green = stages.filter(s => s === 3 || s === 4).length;
     bar.innerHTML = `
-      <div class="stage-chip"><span class="dot" style="background:var(--stage-red)"></span>${red}</div>
-      <div class="stage-chip"><span class="dot" style="background:var(--stage-yellow)"></span>${yellow}</div>
-      <div class="stage-chip"><span class="dot" style="background:var(--stage-green)"></span>${green}</div>
+      <div class="stage-chip"><span class="dot rot"></span>${red}</div>
+      <div class="stage-chip"><span class="dot gelb"></span>${yellow}</div>
+      <div class="stage-chip"><span class="dot gruen"></span>${green}</div>
       <div class="stage-chip">${stages.length} insgesamt geübt</div>
     `;
   }

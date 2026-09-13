@@ -1,0 +1,230 @@
+/* theme.css — Latein-Arena Kursstufe K1
+   Gemeinsame Gestaltung von index, wortschatz, formentrainer und achievements.
+   Einbinden per <link rel="stylesheet" href="theme.css"> VOR dem eigenen <style>.
+
+   Die Palette ist bewusst dieselbe wie in der Schwester-Plattform "Ludi Romani"
+   (Repo Latein_Plattform): gleiche Token-Namen, gleiche Werte, gleiche Assets.
+   Wer dort eine Farbe aendert, kann die Zeile hier unveraendert uebernehmen.
+
+   Abweichung: --font-display und --font-body. Ludi Romani nutzt Georgia und
+   Verdana. In der Kursstufe wird viel zusammenhaengender Text gelesen, deshalb
+   hier Cinzel (roemische Kapitalis) fuer Ueberschriften und Crimson Pro fuer
+   den Fliesstext; Georgia bleibt als Rueckfallebene, falls die Webfonts nicht
+   laden. Die Kontrastwerte sind davon nicht betroffen.
+
+   Alle Kontraste sind Messwerte (WCAG-Verhaeltnis), keine Schaetzungen. */
+
+:root {
+    /* ---- Grundflaechen ---- */
+    --wand:        #e6d9bf;   /* Seitengrund, Travertin */
+    --wand-tief:   #d8c8a6;   /* Abstufung, Raender */
+    --putz:        #f4ecdb;   /* Karten und helle Flaechen */
+    --putz-hell:   #fbf6ec;   /* hervorgehobene Flaechen */
+
+    /* ---- Schrift ---- */
+    --ink:         #33281c;   /* Fliesstext      auf Wand 10,3 · auf Putz 12,2 */
+    --ink-soft:    #6b5a44;   /* Sekundaertext   auf Wand  4,7 · auf Putz  5,6 */
+    --pompeji:     #9b2c2c;   /* Akzent          auf Wand  5,4 · auf Putz  6,4 */
+
+    /* ---- Material: nur fuer Raender und Flaechen, NIE als Schriftfarbe ---- */
+    --bronze:      #8c7853;
+    --gold:        #b8912f;
+    --marmor:      #f0e6d2;
+
+    /* ---- Rueckmeldung und Leitner-Stufen ----
+       Die alten Stufenfarben (#b5533c/#c9a961/#6b8f5c) waren fuer den dunklen
+       Grund gemacht und lagen auf Putz bei 2,6-3,4, also unter der Grenze.
+       Diese hier liegen bei 5,5 / 5,2 / 6,0. */
+    --richtig:     #2f6b3a;
+    --falsch:      #b03030;
+    --stufe-rot:   #b03030;
+    --stufe-gelb:  #8a6114;
+    --stufe-gruen: #2f6b3a;
+
+    /* ---- Schrift ---- */
+    --font-display: 'Cinzel', Georgia, 'Times New Roman', serif;
+    --font-body:    'Crimson Pro', Georgia, 'Times New Roman', serif;
+    --font-mono:    'JetBrains Mono', 'Consolas', monospace;
+
+    /* ---- Wiederkehrende Masse ---- */
+    --rand: 2px solid var(--bronze);
+    --schatten: 0 4px 14px rgba(80, 60, 30, 0.18);
+    --schatten-tief: 0 8px 24px rgba(80, 60, 30, 0.26);
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: var(--font-body);
+    color: var(--ink);
+    min-height: 100dvh;
+
+    /* Steinwand als Grund, durch eine Lage Wandfarbe stark zurueckgenommen:
+       Textur ja, Konkurrenz zum Inhalt nein. Kachel wie in Ludi Romani. */
+    background-color: var(--wand);
+    background-image:
+        linear-gradient(rgba(230, 217, 191, 0.82), rgba(230, 217, 191, 0.82)),
+        url('assets/ui/wand.jpg');
+    background-size: auto, 520px auto;
+    background-repeat: repeat, repeat;
+
+    display: flex; flex-direction: column; align-items: center;
+    padding: clamp(12px, 3vh, 28px) clamp(10px, 3vw, 16px) clamp(24px, 5vh, 60px);
+}
+
+/* ---------- Seitenkopf auf der Bronzetafel ----------
+   Die tabula misst 900x354 (2,54:1). Sie traegt den Titel, also darf sie sich
+   nicht verzerren: Breite und Hoehe folgen demselben Verhaeltnis. Das Feld der
+   Tafel liegt innen bei etwa 78 % der Breite, deshalb sitzt der Text in einem
+   entsprechend schmaleren Kasten. Marmorcreme auf dem dunklen Bronzefeld
+   kommt auf 5,9, die Zeile darueber auf 4,7 (an der Bilddatei gemessen). */
+
+.kopf-tafel {
+    position: relative;
+    width: clamp(300px, 62vw, 640px);
+    aspect-ratio: 900 / 354;
+    background: url('assets/ui/tabula.png') center / contain no-repeat;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    margin-bottom: 4px;
+    filter: drop-shadow(0 6px 16px rgba(80, 60, 30, 0.28));
+}
+.kopf-tafel .eyebrow {
+    font-family: var(--font-mono);
+    font-size: clamp(8px, 1.1vw, 11px);
+    letter-spacing: .18em; text-transform: uppercase;
+    color: #d9cfb4; margin-bottom: 2px;
+}
+.kopf-tafel h1 {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(20px, 3.6vw, 40px);
+    letter-spacing: .06em; margin: 0; text-align: center;
+    color: var(--marmor);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, .45);
+}
+.kopf-tafel .kopf-unter {
+    font-family: var(--font-body); font-style: italic;
+    font-size: clamp(10px, 1.3vw, 14px);
+    color: #ddd3b8; margin-top: 2px; text-align: center;
+}
+
+/* ---------- Maeander-Trenner ----------
+   Kachelt waagerecht; die Vorlage ist gespiegelt aufgebaut, die Naht sitzt
+   deshalb exakt. */
+.trenner {
+    width: 100%; max-width: 760px; height: 26px;
+    background: url('assets/ui/maeander.jpg') left center / auto 100% repeat-x;
+    border-top: 1px solid var(--bronze);
+    border-bottom: 1px solid var(--bronze);
+    margin: 6px auto 18px;
+}
+
+/* ---------- Saeulen am Seitenrand ----------
+   Reiner Zierrat hinter dem Inhalt, ohne Klickflaeche. Das Bild misst 200x860
+   (1:4,3); 24vh Breite ist etwas mehr als die 23,3vh, die das Verhaeltnis
+   verlangt, damit die Saeule vollstaendig sichtbar bleibt. Unter 1240 px
+   bleibt kein Rand mehr uebrig, auf den sie passt. */
+.saeule-links, .saeule-rechts {
+    position: fixed; bottom: 0; width: 24vh; height: 100vh;
+    background: url('assets/ui/saeule.png') bottom center / auto 100% no-repeat;
+    pointer-events: none; z-index: -1; opacity: .55;
+}
+.saeule-links  { left: 0; }
+.saeule-rechts { right: 0; transform: scaleX(-1); }
+@media (max-width: 1240px) {
+    .saeule-links, .saeule-rechts { display: none; }
+}
+
+/* ---------- Zurueck-Verweis ---------- */
+.zurueck {
+    align-self: flex-start;
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--ink-soft); text-decoration: none;
+    padding: 4px 10px; border-radius: 6px;
+    border: 1px solid transparent;
+}
+.zurueck:hover { color: var(--pompeji); border-color: var(--bronze); background: var(--putz); }
+
+/* ---------- Knoepfe ----------
+   Handlungsflaechen tragen Porphyr, den purpurroten Kaiserstein. Die Kachel
+   liegt bei 260 px, also etwa eine Kachel je Knopf.
+   WICHTIG: Wer diese Flaechen ueberschreibt, muss `background-color:` schreiben,
+   nicht die Kurzform `background:` -- die wuerde das Bild entfernen. */
+
+button, .knopf {
+    font-family: var(--font-mono);
+    font-size: clamp(12px, 1.3vw, 14px);
+    padding: 9px 16px; border-radius: 8px;
+    border: var(--rand); background: var(--putz); color: var(--ink);
+    cursor: pointer; touch-action: manipulation;
+    transition: background .15s, transform .12s, border-color .15s;
+}
+button:hover, .knopf:hover { background: var(--putz-hell); transform: translateY(-1px); }
+button:disabled { cursor: default; transform: none; }
+
+.knopf-haupt {
+    background-image: url('assets/ui/porphyr.jpg');
+    background-size: 260px auto; background-position: center;
+    background-color: var(--pompeji);
+    color: var(--marmor); border: 2px solid #6d1f1f;
+    font-family: var(--font-display); font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase;
+    padding: 13px 32px; border-radius: 26px;
+    box-shadow: var(--schatten); text-decoration: none;
+    display: inline-block;
+}
+/* Aufhellen statt Farbwechsel: unter der Textur waere eine andere
+   Hintergrundfarbe unsichtbar. */
+.knopf-haupt:hover { filter: brightness(1.14); background: var(--pompeji) url('assets/ui/porphyr.jpg') center / 260px auto; }
+.knopf-haupt:active { transform: translateY(2px); }
+
+/* ---------- Tafeln und Kaesten ---------- */
+.tafel {
+    background: var(--putz); border: var(--rand); border-radius: 10px;
+    box-shadow: var(--schatten); padding: 18px 20px;
+}
+.hinweis {
+    background: var(--putz) url('assets/ui/lampe.png') right 14px top 12px / 34px auto no-repeat;
+    border: var(--rand); border-left: 6px solid var(--pompeji);
+    border-radius: 8px; padding: 18px 60px 18px 20px;
+    text-align: left; line-height: 1.6; color: var(--ink);
+}
+
+/* ---------- Reiter ---------- */
+.reiter {
+    font-family: var(--font-mono); font-size: 12px;
+    padding: 8px 16px; border-radius: 20px;
+    border: 1px solid var(--bronze); background: var(--putz);
+    color: var(--ink-soft); cursor: pointer; transition: all .18s;
+    user-select: none;
+}
+.reiter:hover { background: var(--putz-hell); color: var(--ink); }
+.reiter.aktiv {
+    background-color: var(--pompeji);
+    background-image: url('assets/ui/porphyr.jpg');
+    background-size: 260px auto;
+    color: var(--marmor); border-color: #6d1f1f;
+    box-shadow: var(--schatten);
+}
+.reiter-reihe { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 14px; }
+
+/* ---------- Auswahlfelder ---------- */
+select {
+    font-family: var(--font-mono); font-size: 12px;
+    padding: 7px 11px; border-radius: 8px;
+    border: 1px solid var(--bronze); background: var(--putz); color: var(--ink);
+}
+select option { background: var(--putz); color: var(--ink); }
+
+/* ---------- Fortschrittsbalken ---------- */
+.balken-schiene {
+    flex: 1; min-width: 120px; height: 10px; border-radius: 5px;
+    background: var(--wand-tief); overflow: hidden; border: 1px solid var(--bronze);
+}
+.balken-fuellung { height: 100%; background: var(--pompeji); transition: width .4s ease; }
+.balken-fuellung.neu { background: var(--gold); }
+
+@media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+}

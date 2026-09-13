@@ -2,98 +2,80 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Latein-Arena · Kursstufe K1</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
 <style>
-  :root{
-    --bg-deep:#161d18; --bg-panel:#1f2b22;
-    --bronze-1:#3d4a3a; --bronze-2:#5c6b4f;
-    --gold:#c9a961; --parchment:#e9e2d0; --parchment-dim:#a9a894;
+  .gitter{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(270px, 1fr));
+    gap:18px; width:100%; max-width:940px;
   }
-  *{box-sizing:border-box;}
-  body{
-    margin:0; min-height:100dvh;
-    background:
-      radial-gradient(ellipse at 20% -10%, #24322650 0%, transparent 55%),
-      radial-gradient(ellipse at 100% 100%, #2a1f1650 0%, transparent 50%),
-      var(--bg-deep);
-    color:var(--parchment); font-family:'Crimson Pro', serif;
-    display:flex; flex-direction:column; align-items:center;
-    padding:clamp(24px,6vh,64px) clamp(16px,4vw,32px);
+  /* Die Kacheln sind Pergamenttafeln mit Bronzerand. Der Kapitell-Stempel sitzt
+     als Hintergrundbild oben rechts und ist stark zurueckgenommen -- er soll die
+     Tafel kennzeichnen, nicht bespielen. */
+  .kachel{
+    position:relative; display:flex; flex-direction:column; gap:9px;
+    padding:24px 22px 20px;
+    background:var(--putz) url('assets/ui/kapitell.png') right 14px top 12px / 42px auto no-repeat;
+    border:var(--rand); border-radius:10px;
+    box-shadow:var(--schatten); text-decoration:none; color:var(--ink);
+    border-top:5px solid var(--pompeji);
+    transition:transform .18s ease, box-shadow .18s ease, background-color .18s;
   }
-  .eyebrow{ font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.18em;
-    text-transform:uppercase; color:var(--parchment-dim); margin-bottom:8px; }
-  h1{ font-family:'Cinzel', serif; font-weight:700; font-size:clamp(32px,5vw,56px);
-    letter-spacing:.03em; margin:0 0 10px; text-align:center; }
-  .subtitle{ color:var(--parchment-dim); font-style:italic; font-size:16px;
-    margin-bottom:clamp(32px,6vh,56px); text-align:center; max-width:520px; }
-
-  .grid{
-    display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
-    gap:20px; width:100%; max-width:920px;
+  .kachel:hover{
+    transform:translateY(-3px); background-color:var(--putz-hell);
+    box-shadow:var(--schatten-tief);
   }
-  .tile{
-    position:relative; display:flex; flex-direction:column; gap:10px;
-    padding:28px 26px; border-radius:14px 34px 14px 34px;
-    background:linear-gradient(155deg, var(--bronze-2), var(--bronze-1) 70%);
-    border:1px solid #ffffff1a; text-decoration:none; color:var(--parchment);
-    box-shadow:0 20px 50px -20px #000000aa, inset 0 1px 0 #ffffff10;
-    transition:transform .2s ease, box-shadow .2s ease;
+  .kachel-titel{
+    font-family:var(--font-display); font-weight:700; font-size:23px;
+    letter-spacing:.04em; color:var(--pompeji); padding-right:44px;
   }
-  .tile:hover{ transform:translateY(-4px); box-shadow:0 28px 60px -20px #000000cc, inset 0 1px 0 #ffffff10; }
-  .tile.disabled{
-    background:linear-gradient(155deg, #2a2f28, #1c211c 70%);
-    color:var(--parchment-dim); cursor:default; pointer-events:none;
-    opacity:.6;
+  .kachel-text{ font-size:16px; line-height:1.5; color:var(--ink); }
+  .kachel-meta{
+    font-family:var(--font-mono); font-size:10.5px; color:var(--ink-soft);
+    letter-spacing:.03em; margin-top:auto; padding-top:10px;
+    border-top:1px solid var(--wand-tief);
   }
-  .tile-title{ font-family:'Cinzel', serif; font-weight:700; font-size:22px; letter-spacing:.02em; }
-  .tile-desc{ font-size:15px; line-height:1.5; color:var(--parchment); opacity:.9; }
-  .tile.disabled .tile-desc{ color:var(--parchment-dim); }
-  .tile-meta{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--gold);
-    letter-spacing:.03em; margin-top:auto; padding-top:8px; }
-  .tile.disabled .tile-meta{ color:var(--parchment-dim); }
-  .badge{
-    position:absolute; top:16px; right:16px;
-    font-family:'JetBrains Mono', monospace; font-size:10px; letter-spacing:.05em;
-    padding:3px 9px; border-radius:12px; background:#00000040; color:var(--gold);
-  }
-  .tile.disabled .badge{ color:var(--parchment-dim); }
-
-  .footer-note{
-    font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--parchment-dim);
-    margin-top:clamp(40px,7vh,64px); text-align:center; max-width:520px; line-height:1.7;
+  .fusszeile{
+    font-family:var(--font-mono); font-size:11px; color:var(--ink-soft);
+    margin-top:clamp(28px,5vh,48px); text-align:center; max-width:560px; line-height:1.7;
   }
 </style>
 </head>
 <body>
+  <div class="saeule-links"></div>
+  <div class="saeule-rechts"></div>
 
-  <div class="eyebrow">Latein-Arena</div>
-  <h1>Kursstufe K1</h1>
-  <p class="subtitle">Wortschatz, Formen und Sprachverständnis für den Leistungskurs — wähle ein Modul.</p>
+  <div class="kopf-tafel">
+    <div class="eyebrow">Latein-Arena</div>
+    <h1>Kursstufe K1</h1>
+    <div class="kopf-unter">Wortschatz, Formen und Sprachverständnis</div>
+  </div>
+  <div class="trenner"></div>
 
-  <div class="grid">
-    <a class="tile" href="./wortschatz.html">
-      <span class="badge">aktiv</span>
-      <div class="tile-title">Vocābula</div>
-      <div class="tile-desc">Grundwortschatz, Cicero und Ovid im Karteikarten-System — mit Leitner-Gewichtung, Worst-of-10 und zwei Zielen: 24 neue Vokabeln pro Woche, 10 Wiederholungen pro Tag. Inklusive Nova: das Stundenpaket mit 6 neuen Wörtern für den Stundenbeginn.</div>
-      <div class="tile-meta">1391 Grundwortschatz · 128 Cicero · 109 Ovid</div>
+  <div class="gitter">
+    <a class="kachel" href="./wortschatz.html">
+      <div class="kachel-titel">Vocābula</div>
+      <div class="kachel-text">Grundwortschatz, Cicero und Ovid im Karteikarten-System — mit Leitner-Gewichtung, Worst-of-10 und zwei Zielen: 24 neue Vokabeln pro Woche, 10 Wiederholungen pro Tag. Inklusive Nova, dem Stundenpaket mit 6 neuen Wörtern für den Stundenbeginn.</div>
+      <div class="kachel-meta">1391 Grundwortschatz · 128 Cicero · 109 Ovid</div>
     </a>
 
-    <a class="tile" href="./formentrainer.html">
-      <span class="badge">aktiv</span>
-      <div class="tile-title">Formae</div>
-      <div class="tile-desc">Verbformen erkennen und bestimmen — live erzeugt aus dem echten Grundwortschatz, regelmäßig und unregelmäßig, mit Textsorten-Profilen (Ausgewogen/Seneca/Ovid). Inklusive Membra: Formen in ihre Bausteine (Stamm, Tempuszeichen, Personalendung …) zerlegen.</div>
-      <div class="tile-meta">399 regelmäßige + 34 unregelmäßige Verben</div>
+    <a class="kachel" href="./formentrainer.html">
+      <div class="kachel-titel">Formae</div>
+      <div class="kachel-text">Verbformen erkennen und bestimmen — live erzeugt aus dem echten Grundwortschatz, regelmäßig und unregelmäßig, mit Textsorten-Profilen für Seneca und Ovid. Inklusive Membra: Formen in ihre Bausteine zerlegen.</div>
+      <div class="kachel-meta">399 regelmäßige + 34 unregelmäßige Verben</div>
     </a>
 
-    <a class="tile" href="./achievements.html">
-      <span class="badge">aktiv</span>
-      <div class="tile-title">Errungenschaften</div>
-      <div class="tile-desc">Bronze, Silber, Gold, Diamant — dein Lernfortschritt in Vocābula und Formae auf einen Blick.</div>
-      <div class="tile-meta">basiert auf deinem gespeicherten Fortschritt</div>
+    <a class="kachel" href="./achievements.html">
+      <div class="kachel-titel">Errungenschaften</div>
+      <div class="kachel-text">Bronze, Silber, Gold, Diamant — dein Lernfortschritt in Vocābula und Formae auf einen Blick.</div>
+      <div class="kachel-meta">basiert auf deinem gespeicherten Fortschritt</div>
     </a>
   </div>
 
+  <p class="fusszeile">Der Lernfortschritt wird auf diesem Gerät im Browser gespeichert.</p>
 </body>
 </html>
