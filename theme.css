@@ -125,7 +125,7 @@ body {
 .ziel-tafel{
     /* Einmal zentral, damit Tafel und Staebe denselben Wert benutzen. */
     --rolle: clamp(27px, 3.6vw, 37px);
-    --knauf: calc(var(--rolle) * 112 / 150);
+    --knauf: calc(var(--rolle) * 106 / 150);
     display:flex; align-items:stretch;
     width:clamp(320px, 58vw, 760px);
     /* Die Knaeufe ragen ueber das Blatt hinaus. Der Aussenabstand faengt diesen
@@ -141,30 +141,32 @@ body {
    0,23). Die Randbreiten folgen der Bildbreite von 150 px, damit die Knaeufe
    bei jeder Rollenbreite unverzerrt bleiben.
    Gemessene Zonen: links Schaft ab Zeile 112 bis 541 (Bild 150x654),
-   rechts ab 98 bis 535 (Bild 150x636). */
+/* Der Ueberstand entspricht der Knaufhoehe. Dadurch ist der Schaft so hoch wie
+   das Blatt -- so wie bei einer echten Rolle, um die das Pergament gewickelt
+   ist -- und die Knaeufe stehen vollstaendig darueber und darunter.
+
+   Beide Staebe benutzen dieselbe Knaufhoehe, damit sie auf gleicher Hoehe
+   sitzen. Die Vorlagen sind naemlich nicht deckungsgleich gezeichnet: links
+   112/112 bei 654 px Bildhoehe, rechts 98/100 bei 636 px. Gewaehlt ist der
+   Mittelwert 105/106, so verteilt sich die Abweichung auf beide Seiten (je
+   rund 6 %) statt eine Rolle um 14 % zu strecken. Die Schnittwerte des
+   border-image bleiben dagegen die jeweils gemessenen -- sie sagen, wo im Bild
+   der Knauf endet, und das ist je Vorlage verschieden. */
 .ziel-rolle{
+    --knauf-oben: calc(var(--rolle) * 105 / 150);
+    --knauf-unten: calc(var(--rolle) * 106 / 150);
     flex:0 0 auto;
     width:var(--rolle);
     align-self:stretch;
     border-style:solid; border-color:transparent;
+    border-width:var(--knauf-oben) 0 var(--knauf-unten);
     background:none;
 }
-/* Der Ueberstand entspricht genau der Knaufhoehe. Dadurch ist der Schaft so
-   hoch wie das Blatt -- so wie bei einer echten Rolle, um die das Pergament
-   gewickelt ist -- und die Knaeufe stehen vollstaendig darueber und darunter.
-   Vorher war der Ueberstand fest auf 13 px gesetzt, sodass die Knaeufe zur
-   Haelfte neben dem Blatt steckten statt darueber. */
 .ziel-rolle.links{
-    --knauf-oben: calc(var(--rolle) * 112 / 150);
-    --knauf-unten: var(--knauf-oben);
-    border-width:var(--knauf-oben) 0 var(--knauf-unten);
     border-image:url('assets/ui/rolle-links.png') 112 0 fill stretch;
     margin:calc(-1 * var(--knauf-oben)) -3px calc(-1 * var(--knauf-unten)) 0;
 }
 .ziel-rolle.rechts{
-    --knauf-oben: calc(var(--rolle) * 98 / 150);
-    --knauf-unten: calc(var(--rolle) * 100 / 150);
-    border-width:var(--knauf-oben) 0 var(--knauf-unten);
     border-image:url('assets/ui/rolle-rechts.png') 98 0 100 0 fill stretch;
     margin:calc(-1 * var(--knauf-oben)) 0 calc(-1 * var(--knauf-unten)) -3px;
 }
