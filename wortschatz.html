@@ -223,6 +223,7 @@
     <div class="modtab active" data-mod="grundwortschatz">Grundwortschatz</div>
     <div class="modtab" data-mod="autor_cicero">Cicero</div>
     <div class="modtab" data-mod="autor_ovid">Ovid: Metamorphosen</div>
+    <div class="modtab" data-mod="autor_seneca">Seneca</div>
   </div>
 
   <div class="filterbar" id="filterbar">
@@ -359,7 +360,8 @@
   </div>
 
   <p class="footer-note">
-    <a href="#" id="resetLink">Fortschritt zurücksetzen</a>
+    <a href="#" id="resetLink">Fortschritt zurücksetzen</a><br>
+    <span style="display:inline-block; margin-top:8px; line-height:1.6;">Seneca-Wortschatz nach <a href="https://www.schule-bw.de/faecher-und-schularten/sprachen-und-literatur/latein/sprache/materialien-zur-sprache-senecas/senecas-wortschatz.html" target="_blank" rel="noopener">„Senecas Wortschatz"</a>, Landesbildungsserver Baden-Württemberg, auf Basis einer Ausarbeitung von Karlheinz Glaser — <a href="https://creativecommons.org/licenses/by/4.0/deed.de" target="_blank" rel="noopener">CC BY 4.0</a>, bearbeitet.</span>
   </p>
 
 <script>
@@ -593,8 +595,12 @@
     document.getElementById('backGram').textContent = currentWord.gram || "";
     document.getElementById('backGram').style.display = (currentWord.gram && currentWord.gram !== currentWord.bed) ? 'block' : 'none';
     document.getElementById('backBed').textContent = currentWord.bed;
+    // Herkunftszeile auf der Rueckseite: Autor und, wo vorhanden, Werk bzw.
+    // thematische Gruppe. Gilt fuer alle Autorenmodule, nicht nur Cicero und Ovid.
     document.getElementById('backKapitel').textContent =
-      (currentWord.typ === "autor_cicero" || currentWord.typ === "autor_ovid") ? currentWord.autorWerk : "";
+      currentWord.autorWerk
+        ? [currentWord.autorWerk, currentWord.quelle].filter(Boolean).join(' · ')
+        : "";
     document.getElementById('card').classList.remove('flipped');
     document.getElementById('controls').style.visibility = 'hidden';
     document.getElementById('ratePrompt').style.visibility = 'hidden';
@@ -951,7 +957,7 @@
     renderWeekGoal();
 
     document.getElementById('totalCount').textContent =
-      `${ALL_WORDS.filter(w=>w.typ==='grundwortschatz').length} Grundwortschatz-Wörter · ${ALL_WORDS.filter(w=>w.typ==='autor_cicero').length} Cicero-Wörter · ${ALL_WORDS.filter(w=>w.typ==='autor_ovid').length} Ovid-Wörter`;
+      `${ALL_WORDS.filter(w=>w.typ==='grundwortschatz').length} Grundwortschatz · ${ALL_WORDS.filter(w=>w.typ==='autor_cicero').length} Cicero · ${ALL_WORDS.filter(w=>w.typ==='autor_ovid').length} Ovid · ${ALL_WORDS.filter(w=>w.typ==='autor_seneca').length} Seneca`;
 
     rebuildPool();
   }
