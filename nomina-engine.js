@@ -6,6 +6,8 @@
 // Substantivklassen: a, o, kons, i, u, e   (i = i-Staemme der 3. Deklination)
 // Adjektivklassen:   ao (bonus/bona/bonum), 3-3 (acer/acris/acre),
 //                    3-2 (fortis/forte), 3-1 (felix, Gen. felicis)
+// Dazu: nurPlural fuer Pluraliatantum (castra, litterae) und paradigma fuer
+// fest hinterlegte Tabellen (vīs, domus, rēs pūblica).
 //
 // Grundsatz: Der Genitiv Singular wird nie neu gebildet, sondern aus dem
 // Datensatz uebernommen -- er stammt aus dem Woerterbuch und ist die Quelle,
@@ -94,6 +96,20 @@ const NominaEngine = (() => {
       };
     }
 
+    // Komparative (melior, melius) folgen der konsonantischen Deklination,
+    // NICHT dem i-Stamm: Ablativ Sg. -e, Genitiv Pl. -um, Neutrum Pl. -a.
+    if (e.klasse === "komp"){
+      const nomSg = genus === "n" ? (e.nomNeutr || s + "ius") : (e.nomMask || s);
+      if (genus === "n") return {
+        sg: { nom: nomSg, gen: s + "is", dat: s + "ī", akk: nomSg, abl: s + "e" },
+        pl: { nom: s + "a", gen: s + "um", dat: s + "ibus", akk: s + "a", abl: s + "ibus" }
+      };
+      return {
+        sg: { nom: nomSg, gen: s + "is", dat: s + "ī", akk: s + "em", abl: s + "e" },
+        pl: { nom: s + "ēs", gen: s + "um", dat: s + "ibus", akk: s + "ēs", abl: s + "ibus" }
+      };
+    }
+
     // Dritte Deklination: durchgehend i-Staemme.
     // Ablativ Sg. auf -ī (attributiver Gebrauch, so auch im Unterricht),
     // Genitiv Pl. auf -ium, Neutrum Pl. auf -ia.
@@ -112,16 +128,27 @@ const NominaEngine = (() => {
     };
   }
 
+  // Pluraliatantum (castra, litterae, moenia) haben keinen Singular. Die
+  // Tabelle liefert dort sg = null; alle Abfragen muessen damit rechnen.
   function tabelle(e, genus){
-    return e.genus ? deklinierSubstantiv(e) : deklinierAdjektiv(e, genus || "m");
+    // Fest hinterlegte Paradigmen: unregelmaessige Woerter (vīs, domus, deus,
+    // vās) und mehrteilige Ausdruecke (rēs pūblica). Sie lassen sich nicht aus
+    // einem Stamm ableiten und stehen deshalb vollstaendig im Datensatz.
+    if (e.paradigma) return e.paradigma;
+    const t = e.genus ? deklinierSubstantiv(e) : deklinierAdjektiv(e, genus || "m");
+    return e.nurPlural ? { sg: null, pl: t.pl } : t;
   }
   function form(e, kasus, numerus, genus){
     const t = tabelle(e, genus);
-    return t[numerus] ? t[numerus][kasus] : null;
+    return (t[numerus] && t[numerus][kasus]) ? t[numerus][kasus] : null;
   }
   function alleFormen(e, genus){
     const t = tabelle(e, genus);
-    return [].concat(KASUS.map(k => t.sg[k]), KASUS.map(k => t.pl[k]));
+    // Beide Numeri koennen fehlen: Pluraliatantum haben keinen Singular,
+    // aes aliēnum keinen Plural.
+    const sg = t.sg ? KASUS.map(k => t.sg[k]) : [];
+    const pl = t.pl ? KASUS.map(k => t.pl[k]) : [];
+    return [].concat(sg, pl).filter(Boolean);
   }
 
   return { deklinierSubstantiv, deklinierAdjektiv, tabelle, form, alleFormen,

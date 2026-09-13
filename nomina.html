@@ -149,6 +149,7 @@
       <option value="3-3">Adjektiv dreiendig (ācer)</option>
       <option value="3-2">Adjektiv zweiendig (fortis)</option>
       <option value="3-1">Adjektiv einendig (fēlīx)</option>
+      <option value="komp">Adjektiv Komparativ (melior)</option>
     </select>
     <select id="numerusFilter">
       <option value="alle">Singular + Plural</option>
@@ -259,7 +260,8 @@
     a:"a-Deklination", o:"o-Deklination", kons:"konsonantische Deklination",
     i:"i-Stamm (3. Deklination)", u:"u-Deklination", e:"e-Deklination",
     ao:"Adjektiv o/a-Deklination", "3-3":"Adjektiv, dreiendig",
-    "3-2":"Adjektiv, zweiendig", "3-1":"Adjektiv, einendig"
+    "3-2":"Adjektiv, zweiendig", "3-1":"Adjektiv, einendig",
+    komp:"Adjektiv, Komparativ"
   };
   const GENUS_LANG = { m:"maskulin", f:"feminin", n:"neutrum" };
 
@@ -284,12 +286,15 @@
   // Alle Bestimmungen, die auf diese Form zutreffen. Lateinische Nominalformen
   // sind haeufig mehrdeutig (puellae: Gen. Sg., Dat. Sg., Nom. Pl.) -- der
   // Trainer muss deshalb jede davon als richtig anerkennen.
+  // Achtung: ein Numerus kann ganz fehlen (castra hat keinen Singular,
+  // aes aliēnum keinen Plural).
   function bestimmungenFuer(eintrag, form, genus){
     const t = NominaEngine.tabelle(eintrag, genus);
     const treffer = [];
-    for (const num of ["sg","pl"])
-      for (const k of KASUS)
-        if (t[num][k] === form) treffer.push({ kasus:k, numerus:num });
+    for (const num of ["sg","pl"]){
+      if (!t[num]) continue;
+      for (const k of KASUS) if (t[num][k] === form) treffer.push({ kasus:k, numerus:num });
+    }
     return treffer;
   }
 
@@ -298,10 +303,14 @@
   function zufallsItem(){
     const p = pool();
     if (!p.length) return null;
-    for (let versuch = 0; versuch < 20; versuch++){
+    for (let versuch = 0; versuch < 25; versuch++){
       const { e, adj } = p[Math.floor(Math.random() * p.length)];
       const genus = adj ? ["m","f","n"][Math.floor(Math.random()*3)] : e.genus;
-      const numeri = currentNumerus === "alle" ? ["sg","pl"] : [currentNumerus];
+      const t = NominaEngine.tabelle(e, genus);
+      // Nur Numeri anbieten, die es bei diesem Wort ueberhaupt gibt
+      let numeri = ["sg","pl"].filter(n => t[n]);
+      if (currentNumerus !== "alle") numeri = numeri.filter(n => n === currentNumerus);
+      if (!numeri.length) continue;
       const num = numeri[Math.floor(Math.random()*numeri.length)];
       const kas = KASUS[Math.floor(Math.random()*KASUS.length)];
       const form = NominaEngine.form(e, kas, num, genus);
@@ -312,18 +321,18 @@
       return {
         id: e.lemma + "|" + genus + "|" + form + "|" + currentNumerus,
         eintrag: e, adj, genus, form, alle,
-        klasseLabel: KLASSE_LABEL[e.klasse] || e.klasse
+        klasseLabel: KLASSE_LABEL[e.klasse] || (e.paradigma ? "unregelmäßig" : e.klasse)
       };
     }
     return null;
   }
 </script>
 <script>
-  // --- Anzeige ---
   function kopfzeile(item){
     const e = item.eintrag;
-    if (item.adj) return `${e.lemma} · ${item.klasseLabel} · ${GENUS_LANG[item.genus]}`;
-    return `${e.lemma}, ${e.gen} (${item.genus}.) · ${item.klasseLabel}`;
+    const zusatz = e.nurPlural ? " · nur Plural" : (e.hinweis ? " · " + e.hinweis : "");
+    if (item.adj) return `${e.lemma} · ${item.klasseLabel} · ${GENUS_LANG[item.genus]}${zusatz}`;
+    return `${e.lemma}, ${e.gen} (${item.genus}.) · ${item.klasseLabel}${zusatz}`;
   }
 
   function renderStageBar(){

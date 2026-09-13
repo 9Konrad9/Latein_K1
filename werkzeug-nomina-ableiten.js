@@ -21,15 +21,23 @@ function parseSubstantiv(w){
   let roh = (w.gram || "").trim();
   if (!roh) return { fehler: "kein gram-Feld" };
   if (/undeklinierbar|kein Gen/i.test(roh)) return { fehler: "undeklinierbar oder defektiv" };
-  if (/Adj\./.test(roh))            return { fehler: "substantiviertes Adjektiv" };
+  // Substantivierte Adjektive notieren beides: "Rōmāna, Rōmānum Adj. / Rōmānī, m."
+  // Hinter dem Schraegstrich steht die Substantivform -- die ist hier gemeint.
+  if (/Adj\./.test(roh)) {
+    const nachSchraeg = roh.split("/").pop().trim();
+    if (/^[^,]+,\s*(m|f|n)\.?$/.test(nachSchraeg)) roh = nachSchraeg;
+    else return { fehler: "substantiviertes Adjektiv ohne lesbare Substantivform" };
+  }
+  roh = roh.replace(/\([^)]*\)/g, "").trim();          // Klammerzusaetze weg
+  roh = roh.replace(/\s*und\s*(m|f|n)\.\s*$/, "");     // "m. und f." -> "m."
+  roh = roh.replace(/^([^,]+),\s*(m|f|n)\.?\s*\/\s*(m|f|n)\.?$/, "$1, $2.");  // "m./f." -> "m."
+  roh = roh.replace(/,\s*$/, "");                       // nachgestelltes Komma ("sacerdōtis,")
+
   if (/[a-zā-ū]ō,\s/.test(roh))     return { fehler: "Verbstammformen im gram-Feld" };
-  if (/Pl\.|Pluralwort/i.test(roh)) return { fehler: "Pluraletantum" };
   if (/\s/.test(w.lemma))           return { fehler: "mehrteiliges Lemma" };
   if (HETEROKLITISCH.test(w.lemma)) return { fehler: "heteroklitisch (Sg. und Pl. verschiedene Deklination)" };
   if (/\//.test(w.lemma) || /\//.test(roh)) return { fehler: "Doppellemma oder Nebenform" };
 
-  roh = roh.replace(/\([^)]*\)/g, "").trim();          // Klammerzusaetze weg
-  roh = roh.replace(/\s*und\s*(m|f|n)\.\s*$/, "");     // "m. und f." -> "m."
 
   let gen = null, genus = null;
   const mitKomma  = roh.match(/^([^,]+),\s*(m|f|n)\.?$/);
@@ -61,6 +69,35 @@ function parseSubstantiv(w){
     else if (/^[eē]ī$/.test(gen) && /ēs$/.test(l)) gen = l.slice(0, -2) + "ēī";
     else return { fehler: "Kurzgenitiv nicht aufloesbar: " + gen + " zu " + l };
   }
+
+  // --- Pluraliatantum -----------------------------------------------------
+  // castra, litterae, moenia: das Woerterbuch nennt den Genitiv PLURAL.
+  // Die Endung allein reicht zur Bestimmung nicht -- "-ōrum" kann o-Deklination
+  // sein (castr-ōrum) oder konsonantisch mit Stamm auf -ōr (maiōr-um). Deshalb
+  // entscheidet der Nominativ Plural ueber die Klasse, der Genitiv ueber den Stamm.
+  if (/(ārum|ōrum|ērum|uum|ium|um)$/.test(gen)) {
+    const l = w.lemma;
+    let klasse, stamm;
+    if (/ae$/.test(l))       { klasse = "a";    stamm = l.slice(0, -2); }
+    else if (/ī$/.test(l))   { klasse = "o";    stamm = l.slice(0, -1); }
+    else if (/a$/.test(l))   { klasse = /ium$/.test(gen) ? "i" : "o";
+                               stamm = /ium$/.test(gen) ? l.slice(0, -2) : l.slice(0, -1); }
+    else if (/ūs$/.test(l))  { klasse = "u";    stamm = l.slice(0, -2); }
+    else if (/[eē]s$/.test(l)) {
+      if (/ium$/.test(gen))      { klasse = "i";    stamm = gen.slice(0, -3) || l.slice(0, -2); }
+      else if (/ērum$/.test(gen)){ klasse = "e";    stamm = gen.slice(0, -4); }
+      else                       { klasse = "kons"; stamm = gen.slice(0, -2) || l.slice(0, -2); }
+    }
+    else return { fehler: "Pluralklasse nicht bestimmbar" };
+    if (!stamm) return { fehler: "Pluralstamm leer" };
+
+    const kurz = s => s.toLowerCase().replace(/[āăa]/g,"a").replace(/[ēĕe]/g,"e")
+      .replace(/[īĭi]/g,"i").replace(/[ōŏo]/g,"o").replace(/[ūŭu]/g,"u");
+    if (!kurz(l).startsWith(kurz(stamm)))
+      return { fehler: "Pluralstamm passt nicht zum Nominativ: " + l + " / " + stamm };
+    return { lemma: l, gen, stamm, klasse, genus, bedeutung: w.bed, nurPlural: true };
+  }
+
 
   let klasse, stamm;
   if (/ae$/.test(gen))         { klasse = "a";    stamm = gen.slice(0, -2); }
@@ -99,28 +136,71 @@ function parseSubstantiv(w){
 function parseAdjektiv(w){
   const lemma = (w.lemma || "").trim();
   const roh   = (w.gram || "").trim();
+  // Verben, die unter den Adjektiven gelandet sind: ein Infinitiv gefolgt von
+  // weiteren Stammformen (torquēre, torquēo, torsī, tortum).
+  if (/(āre|ēre|ere|īre),\s/.test(lemma))         return { fehler: "Verbstammformen" };
   if (/[a-zā-ū]ō,\s|---/.test(lemma + " " + roh)) return { fehler: "Verbstammformen" };
   if (/^(ecce|necesse|nōndum)/.test(lemma))       return { fehler: "kein Adjektiv" };
+  if (/que$/.test(lemma.split(",")[0].trim()))    return { fehler: "mit Enklitikum -que" };
+
   const kern = lemma.split("/")[0].trim();
   const teile = kern.split(",").map(s => s.trim()).filter(Boolean);
   const gramKern = roh.split("/")[0].trim();
-  if (/(ior|ius)$/.test(teile[0]) && /ius$/.test(teile[1] || gramKern || ""))
-    return { fehler: "Komparativ" };
+  const gramTeile = gramKern.split(",").map(s => s.trim()).filter(Boolean);
 
+  // --- Komparative: melior/melius, māior/māius. Sie folgen der konsonantischen
+  // Deklination (Abl. Sg. -e, Gen. Pl. -um), nicht dem i-Stamm.
+  // minor/minus endet nicht auf -ior, ist aber derselbe Typ: Nominativ auf -or
+  // mit einem Neutrum auf -us daneben.
+  const istKomparativ = /ior$/.test(teile[0]) ||
+    (/or$/.test(teile[0]) && gramTeile.length >= 2 &&
+     gramTeile[0] === teile[0] && /us$/.test(gramTeile[1]));
+  if (istKomparativ) {
+    const nomMask = teile[0];
+    const stamm = nomMask.replace(/or$/, "ōr");
+    // Das Neutrum steht meist daneben (melior, melius / minor, minus). Es endet
+    // auf -us, nicht zwingend auf -ius: minus, nicht minius.
+    const kandidaten = teile.concat(gramTeile).flatMap(t => t.split(" ")).filter(Boolean);
+    const nomNeutr = kandidaten.find(t => /us$/.test(t) && t !== nomMask)
+                   || stamm.slice(0, -2) + "ius";
+    return { lemma: nomMask + ", " + nomNeutr, stamm, klasse: "komp",
+             nomMask, nomNeutr, bedeutung: w.bed };
+  }
+
+  // --- Nur im Plural gefuehrte Adjektive: multī/multae/multa, omnēs/omnia ---
+  if (teile.length === 3 && /ī$/.test(teile[0]) && /ae$/.test(teile[1]) && /a$/.test(teile[2]))
+    return { lemma: kern, stamm: teile[0].slice(0, -1), klasse: "ao", nurPlural: true,
+             nomMask: teile[0], bedeutung: w.bed };
+  if (teile.length === 2 && /ēs$/.test(teile[0]) && /a$/.test(teile[1]))
+    return { lemma: kern, stamm: teile[0].slice(0, -2), klasse: "3-2", nurPlural: true, bedeutung: w.bed };
+
+  // --- o/a-Deklination, dreiendig ---
   if (teile.length === 3 && /um$/.test(teile[2]) && /a$/.test(teile[1])) {
     const stamm = /us$/.test(teile[0]) ? teile[0].slice(0, -2) : teile[1].slice(0, -1);
     if (!stamm) return { fehler: "Stamm leer" };
     return { lemma: kern, stamm, klasse: "ao", nomMask: teile[0], bedeutung: w.bed };
   }
+  // Femininum und Neutrum stehen im gram-Feld: "indīgna, indīgnum mit Gen."
+  if (teile.length === 1 && /us$/.test(teile[0]) && gramTeile.length >= 2
+      && /a$/.test(gramTeile[0]) && /^\S+um\b/.test(gramTeile[1]))
+    return { lemma: teile[0] + ", " + gramTeile[0] + ", " + gramTeile[1].split(" ")[0],
+             stamm: teile[0].slice(0, -2), klasse: "ao", nomMask: teile[0], bedeutung: w.bed };
+  // Blosses Lemma auf -us ohne weitere Angabe -> regulaer o/a
+  if (teile.length === 1 && /us$/.test(teile[0]) && !gramKern)
+    return { lemma: teile[0] + ", " + teile[0].slice(0, -2) + "a, " + teile[0].slice(0, -2) + "um",
+             stamm: teile[0].slice(0, -2), klasse: "ao", nomMask: teile[0], bedeutung: w.bed };
+
+  // --- Dritte Deklination ---
   if (teile.length === 3 && /re$/.test(teile[2]) && /ris$/.test(teile[1]))
     return { lemma: kern, stamm: teile[1].slice(0, -2), klasse: "3-3", nomMask: teile[0], bedeutung: w.bed };
   if (teile.length >= 2 && /e$/.test(teile[teile.length-1]) && /is$/.test(teile[0]))
     return { lemma: teile[0] + ", " + teile[teile.length-1], stamm: teile[0].slice(0, -2), klasse: "3-2", bedeutung: w.bed };
   if (teile.length === 1 && /is$/.test(teile[0]) && /^[^,\s]*e$/.test(gramKern))
     return { lemma: teile[0] + ", " + gramKern, stamm: teile[0].slice(0, -2), klasse: "3-2", bedeutung: w.bed };
-  const gen1 = (teile.length === 2 && /is$/.test(teile[1])) ? teile[1]
+  const gen1 = (teile.length >= 2 && /is$/.test(teile[1])) ? teile[1]
              : (/^[^,\s]+is$/.test(gramKern) ? gramKern : null);
-  if (gen1) return { lemma: teile[0] + ", " + gen1, stamm: gen1.slice(0, -2), klasse: "3-1", nomMask: teile[0], bedeutung: w.bed };
+  if (gen1) return { lemma: teile[0] + ", " + gen1, stamm: gen1.slice(0, -2), klasse: "3-1",
+                     nomMask: teile[0], bedeutung: w.bed };
   return { fehler: "Adjektivtyp nicht erkannt" };
 }
 
@@ -131,6 +211,18 @@ for (const w of substRoh){ const r = parseSubstantiv(w);
   if (r.fehler) (nein.s[r.fehler.split(":")[0]] ??= []).push(w.lemma); else substantive.push(r); }
 for (const w of adjRoh){ const r = parseAdjektiv(w);
   if (r.fehler) (nein.a[r.fehler.split(":")[0]] ??= []).push(w.lemma); else adjektive.push(r); }
+
+
+// Von Hand kuratierte Nachzuegler dazunehmen. Sie ersetzen keine abgeleiteten
+// Eintraege, sondern ergaenzen das, was sich nicht maschinell bestimmen liess.
+const kuratiert = require(__dirname + "/werkzeug-nomina-kuratiert.js");
+const vorhanden = new Set(substantive.map(x => x.lemma));
+let ergaenzt = 0;
+for (const e of kuratiert.regulaer.concat(kuratiert.fest)){
+  if (vorhanden.has(e.lemma)) { console.log("  schon abgeleitet, uebersprungen: " + e.lemma); continue; }
+  substantive.push(e); vorhanden.add(e.lemma); ergaenzt++;
+}
+console.log("kuratiert ergaenzt: " + ergaenzt);
 
 fs.writeFileSync("nomina-alle.json", JSON.stringify({ substantive, adjektive }));
 console.log("Substantive: " + substantive.length + " von " + substRoh.length);
