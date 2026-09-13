@@ -137,7 +137,7 @@ body {
    Gemessene Zonen: links Schaft ab Zeile 112 bis 541 (Bild 150x654),
    rechts ab 98 bis 535 (Bild 150x636). */
 .ziel-rolle{
-    --rolle: clamp(20px, 2.7vw, 28px);
+    --rolle: clamp(27px, 3.6vw, 37px);
     flex:0 0 auto;
     width:var(--rolle);
     align-self:stretch;
