@@ -173,13 +173,14 @@
     <div class="ziel-rolle links"></div>
     <div class="ziel-mitte">
   <div class="daily-goal" id="dailyGoal">
-    <div class="daily-goal-text" id="dailyGoalText">Heute: 0 / 20 Formen</div>
+    <div class="daily-goal-text" id="dailyGoalText">Heute: 0 / 5 Formen</div>
     <div class="daily-goal-bar"><div class="daily-goal-fill" id="dailyGoalFill" style="width:0%"></div></div>
     <select id="goalSelect" title="Tagesziel anpassen">
+      <option value="5" selected>Ziel: 5/Tag</option>
       <option value="10">Ziel: 10/Tag</option>
-      <option value="20" selected>Ziel: 20/Tag</option>
+      <option value="15">Ziel: 15/Tag</option>
+      <option value="20">Ziel: 20/Tag</option>
       <option value="30">Ziel: 30/Tag</option>
-      <option value="50">Ziel: 50/Tag</option>
     </select>
   </div>
     </div>
@@ -711,7 +712,9 @@
   // --- Tagesziel (gleiches Prinzip wie im Wortschatz-Trainer) ---
   const DAILY_KEY = "formentrainer-tagesstatistik";
   const GESAMT_KEY = "formentrainer-gesamt";   // lebenslang, wird nie zurueckgesetzt
-  let dailyStats = { date: "", count: 0, goal: 20 };
+  const DAILY_DEFAULT = 5;   // Formen pro Tag; zusammen mit dem anderen
+                             // Formenwerkzeug ergibt das zehn am Tag
+  let dailyStats = { date: "", count: 0, goal: DAILY_DEFAULT };
 
   function todayStr(){
     const d = new Date();
@@ -722,8 +725,8 @@
       const raw = localStorage.getItem(DAILY_KEY);
       const parsed = raw ? JSON.parse(raw) : null;
       if (parsed && parsed.date === todayStr()) return parsed;
-      return { date: todayStr(), count: 0, goal: parsed ? parsed.goal : 20 };
-    } catch(e) { return { date: todayStr(), count: 0, goal: 20 }; }
+      return { date: todayStr(), count: 0, goal: parsed ? parsed.goal : DAILY_DEFAULT };
+    } catch(e) { return { date: todayStr(), count: 0, goal: DAILY_DEFAULT }; }
   }
   function saveDailyStats(){
     try { localStorage.setItem(DAILY_KEY, JSON.stringify(dailyStats)); } catch(e) {}
