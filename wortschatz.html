@@ -107,7 +107,15 @@
   .latin-word{ font-family:var(--font-display); font-weight:700;
     font-size:clamp(26px,3.8vw,44px); letter-spacing:.02em; color:var(--ink); }
   .meta-tag{ font-family:var(--font-mono); font-size:10px; color:var(--ink-soft);
-    margin-top:10px; letter-spacing:.05em; text-transform:uppercase; }
+    margin-top:10px; letter-spacing:.05em; text-transform:none; }
+  /* Wortart bleibt ein leises Etikett in Versalien, die Grammatikangabe steht
+     daneben in normaler Schreibung und etwas kraeftiger -- sie ist der Teil,
+     den man sich merken soll. */
+  .meta-tag .meta-wa{ text-transform:uppercase; letter-spacing:.09em; opacity:.7; }
+  .meta-tag .meta-gram{
+    margin-left:9px; padding-left:9px; border-left:1px solid var(--wand-tief);
+    font-size:12px; color:var(--ink); letter-spacing:.01em;
+  }
   .back-gram{ font-family:var(--font-mono); font-size:12px; color:var(--ink-soft);
     letter-spacing:.02em; margin-bottom:8px; }
   .back-bed{ font-size:clamp(18px,2.8vw,30px); line-height:1.35; color:var(--pompeji);
@@ -596,9 +604,32 @@
     else renderKarte();
   }
 
+  // Die Grammatikangabe gehoert auf jede Karte, nicht nur auf die Rueckseite:
+  // bei Substantiven Genitiv und Genus, bei Verben die Stammformen. Das Feld ist
+  // bei Substantiven zu 100 und bei Verben zu 97 Prozent gefuellt; wo es fehlt
+  // (Adjektive tragen ihre Formen im Lemma, Adverbien haben keine), bleibt
+  // schlicht die Wortart stehen.
+  //
+  // Zwei Teile statt einer Zeichenkette, weil die Wortart als Etikett in
+  // Versalien gesetzt ist, die Grammatikangabe aber nicht -- "QUAESTŌRIS, M."
+  // laesst sich mit Laengenzeichen schlecht lesen.
+  function setzeMeta(el, w){
+    el.textContent = "";
+    const etikett = document.createElement('span');
+    etikett.className = 'meta-wa';
+    etikett.textContent = WA_LABELS[w.waGroup] || w.waGroup;
+    el.appendChild(etikett);
+    const g = (w.gram && w.gram !== w.bed) ? w.gram.trim() : "";
+    if (g){
+      const angabe = document.createElement('span');
+      angabe.className = 'meta-gram';
+      angabe.textContent = g;
+      el.appendChild(angabe);
+    }
+  }
   function renderKarte(){
     document.getElementById('latinWord').textContent = currentWord.lemma;
-    document.getElementById('wortartTag').textContent = WA_LABELS[currentWord.waGroup] || currentWord.waGroup;
+    setzeMeta(document.getElementById('wortartTag'), currentWord);
     document.getElementById('backGram').textContent = currentWord.gram || "";
     document.getElementById('backGram').style.display = (currentWord.gram && currentWord.gram !== currentWord.bed) ? 'block' : 'none';
     document.getElementById('backBed').textContent = currentWord.bed;
@@ -629,7 +660,7 @@
 
   function renderMC(){
     document.getElementById('mcWord').textContent = currentWord.lemma;
-    document.getElementById('mcWortartTag').textContent = WA_LABELS[currentWord.waGroup] || currentWord.waGroup;
+    setzeMeta(document.getElementById('mcWortartTag'), currentWord);
     const options = buildWortDistraktoren(currentWord);
     options.push(currentWord.bed);
     options.sort(() => Math.random()-0.5);
@@ -808,8 +839,7 @@
   function novaRender1(){
     const w = novaWoerter[novaIndex];
     document.getElementById('novaLemma').textContent = w.lemma;
-    document.getElementById('novaGram').textContent =
-      [WA_LABELS[w.waGroup] || w.waGroup, w.gram].filter(Boolean).join(' · ');
+    setzeMeta(document.getElementById('novaGram'), w);
     document.getElementById('novaBed').textContent = w.bed;
     document.getElementById('counter').textContent =
       `Kennenlernen · ${novaIndex + 1} / ${novaWoerter.length}`;
@@ -845,7 +875,7 @@
   function novaRender2(){
     const w = novaQueue[0];
     document.getElementById('novaMcWord').textContent = w.lemma;
-    document.getElementById('novaMcTag').textContent = WA_LABELS[w.waGroup] || w.waGroup;
+    setzeMeta(document.getElementById('novaMcTag'), w);
     document.getElementById('counter').textContent =
       `Abfrage · noch ${novaQueue.length}`;
     const optionen = novaDistraktoren(w);
@@ -888,7 +918,7 @@
   function novaRender3(){
     const w = novaWoerter[novaIndex];
     document.getElementById('novaKLemma').textContent = w.lemma;
-    document.getElementById('novaKTag').textContent = WA_LABELS[w.waGroup] || w.waGroup;
+    setzeMeta(document.getElementById('novaKTag'), w);
     document.getElementById('novaKGram').textContent = w.gram || '';
     document.getElementById('novaKGram').style.display = (w.gram && w.gram !== w.bed) ? 'block' : 'none';
     document.getElementById('novaKBed').textContent = w.bed;
