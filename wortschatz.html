@@ -692,7 +692,12 @@
     etikett.className = 'meta-wa';
     etikett.textContent = WA_LABELS[w.waGroup] || w.waGroup;
     el.appendChild(etikett);
-    const g = (w.gram && w.gram !== w.bed) ? w.gram.trim() : "";
+    // Angaben, die nichts sagen: 29 Adverbien tragen als Grammatikangabe
+    // schlicht "Adv." -- das steht schon als Wortart daneben --, und bei vier
+    // Eintraegen steht ein blosser Schraegstrich fuer "keine Angabe".
+    const OHNE_AUSSAGE = ["/", "Adv.", "Adv", "-", "–", "—"];
+    let g = (w.gram && w.gram !== w.bed) ? w.gram.trim() : "";
+    if (OHNE_AUSSAGE.indexOf(g) !== -1) g = "";
     if (g){
       const angabe = document.createElement('span');
       angabe.className = 'meta-gram';
