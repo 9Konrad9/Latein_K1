@@ -124,6 +124,14 @@
   .hint{ position:absolute; bottom:14px; font-family:var(--font-mono); font-size:10px; color:var(--ink-soft); opacity:.7; }
 
   /* ---------- Bewertung ---------- */
+  /* Formangaben: die Karte nennt Lemma und Bedeutung, aber bewusst NICHT die
+     Grammatikangabe -- die ist ja die gesuchte Antwort. */
+  .formen-bed{ font-size:clamp(15px,2vw,19px); line-height:1.35; color:var(--pompeji);
+    font-weight:600; margin-top:12px; }
+  .formen-frage{ font-family:var(--font-body); font-style:italic; font-size:15px;
+    color:var(--ink-soft); margin:0 0 12px; text-align:center; }
+  .formen-loesung{ font-family:var(--font-mono); font-size:12px; color:var(--ink-soft);
+    margin:0 0 12px; text-align:center; min-height:16px; }
   .rate-prompt{ font-family:var(--font-body); font-style:italic; font-size:15px;
     color:var(--ink-soft); margin:0 0 10px; text-align:center; }
   .controls{ display:flex; gap:10px; margin-bottom:8px; flex-wrap:wrap; justify-content:center; }
@@ -258,6 +266,7 @@
   <div class="uebung-tabs">
     <div class="uebung-tab active" data-modus="karten">Karten</div>
     <div class="uebung-tab" data-modus="mc">Multiple Choice</div>
+    <div class="uebung-tab" data-modus="formen">Formangaben</div>
     <div class="uebung-tab" data-modus="nova">Nova · Stundenpaket</div>
   </div>
 
@@ -298,6 +307,21 @@
       </div>
     </div>
     <div class="mc-options" id="mcOptions"></div>
+  </div>
+
+  <div id="formenView" style="display:none">
+    <div class="arena arena-kompakt">
+      <div class="card no-flip" id="formenCard">
+        <div class="face front">
+          <div class="latin-word" id="formenWort">—</div>
+          <div class="meta-tag" id="formenTag">—</div>
+          <div class="formen-bed" id="formenBed">—</div>
+        </div>
+      </div>
+    </div>
+    <p class="formen-frage" id="formenFrage">—</p>
+    <p class="formen-loesung" id="formenLoesung"></p>
+    <div class="mc-options" id="formenOptionen"></div>
   </div>
 
   <div id="novaView" style="display:none">
@@ -377,6 +401,7 @@
   </p>
 
 <script src="fortschritt.js"></script>
+<script src="formangaben.js"></script>
 <script>
   let ALL_WORDS = [];
 
@@ -549,6 +574,7 @@
     lastWordId = null;
     seenCount = 0;
     if (currentUebungsmodus === 'nova') novaStartBildschirm();
+    else if (currentUebungsmodus === 'formen') naechsteFormenfrage();
     else showCard();
   }
 
@@ -730,9 +756,15 @@
       document.getElementById('kartenView').style.display = currentUebungsmodus === 'karten' ? 'block' : 'none';
       document.getElementById('mcView').style.display = currentUebungsmodus === 'mc' ? 'block' : 'none';
       document.getElementById('novaView').style.display = currentUebungsmodus === 'nova' ? 'block' : 'none';
+      document.getElementById('formenView').style.display = currentUebungsmodus === 'formen' ? 'block' : 'none';
       // Worst-of passt nicht zum Stundenpaket -- dort geht es ja gerade um Unbekanntes.
-      document.getElementById('worstBtn').style.display = currentUebungsmodus === 'nova' ? 'none' : '';
+      // Worst-of passt weder zum Stundenpaket noch zu den Formangaben --
+      // beide richten sich nicht nach den Vokabel-Leitnerstufen.
+      document.getElementById('worstBtn').style.display =
+        (currentUebungsmodus === 'nova' || currentUebungsmodus === 'formen') ? 'none' : '';
+      seenCount = 0;
       if (currentUebungsmodus === 'nova') novaStartBildschirm();
+      else if (currentUebungsmodus === 'formen') naechsteFormenfrage();
       else showCard();
     });
   });
@@ -756,6 +788,89 @@
       rebuildPool();
     }
   });
+
+  // --- Formangaben ---------------------------------------------------------
+  // Eigener Fortschrittsspeicher: zu wissen, was ein Wort heisst, und zu
+  // wissen, wie seine Stammformen lauten, sind zwei verschiedene Dinge. Sie
+  // teilen sich deshalb nicht dieselbe Leitner-Stufe.
+  const FORMEN_KEY = "latein-arena-kursstufe-formen";
+  let formenProgress = {};
+  let formenWort = null;
+  let formenFrage = null;
+
+  function ladeFormenFortschritt(){
+    try { formenProgress = JSON.parse(localStorage.getItem(FORMEN_KEY) || '{}'); }
+    catch(e) { formenProgress = {}; }
+  }
+  function sichereFormenFortschritt(){
+    try { localStorage.setItem(FORMEN_KEY, JSON.stringify(formenProgress)); } catch(e) {}
+  }
+
+  function formenPool(){ return filteredByUI().filter(w => Formangaben.taugt(w)); }
+
+  function naechsteFormenfrage(){
+    const pool = formenPool();
+    if (!pool.length){
+      document.getElementById('formenWort').textContent = "— keine Formangaben für diese Auswahl —";
+      document.getElementById('formenTag').textContent = "";
+      document.getElementById('formenBed').textContent = "";
+      document.getElementById('formenFrage').textContent = "";
+      document.getElementById('formenOptionen').innerHTML = '';
+      document.getElementById('counter').textContent = "0 Wörter";
+      return;
+    }
+    // Leitner-Gewichtung wie im Kartenmodus, nur auf den eigenen Stufen
+    const stufe = w => formenProgress[w.id] === undefined ? 0 : formenProgress[w.id];
+    const gesamt = pool.reduce((s, w) => s + stageWeight(stufe(w)), 0);
+    let r = Math.random() * gesamt, gewaehlt = pool[pool.length - 1];
+    for (const w of pool){ r -= stageWeight(stufe(w)); if (r <= 0){ gewaehlt = w; break; } }
+
+    formenWort = gewaehlt;
+    formenFrage = Formangaben.fuer(gewaehlt);
+    seenCount++;
+    document.getElementById('counter').textContent =
+      `${seenCount}. Frage · ${pool.length} Wörter mit Formangabe`;
+    renderFormen();
+  }
+
+  function renderFormen(){
+    document.getElementById('formenWort').textContent = formenWort.lemma;
+    // Nur die Wortart, nicht die Grammatikangabe -- die wird ja gesucht.
+    document.getElementById('formenTag').textContent =
+      WA_LABELS[formenWort.waGroup] || formenWort.waGroup;
+    document.getElementById('formenBed').textContent = formenWort.bed;
+    document.getElementById('formenFrage').textContent = formenFrage.frage;
+    document.getElementById('formenLoesung').textContent = '';
+    const optionen = [formenFrage.richtig, ...formenFrage.falsche].sort(() => Math.random() - 0.5);
+    const box = document.getElementById('formenOptionen');
+    box.innerHTML = '';
+    optionen.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'mc-btn';
+      btn.textContent = opt;
+      btn.onclick = () => formenAntwort(btn, opt);
+      box.appendChild(btn);
+    });
+  }
+
+  function formenAntwort(btn, gewaehlt){
+    const korrekt = gewaehlt === formenFrage.richtig;
+    document.querySelectorAll('#formenOptionen .mc-btn').forEach(b => {
+      b.disabled = true;
+      if (b.textContent === formenFrage.richtig) b.classList.add('correct');
+      else if (b === btn) b.classList.add('wrong');
+    });
+    document.getElementById('formenLoesung').textContent =
+      `${formenWort.lemma}, ${formenFrage.richtig}`;
+
+    const alt = formenProgress[formenWort.id] === undefined ? 0 : formenProgress[formenWort.id];
+    formenProgress[formenWort.id] = korrekt ? Math.min(4, alt + 1) : 0;
+    sichereFormenFortschritt();
+    // Zaehlt als Wiederholung, nicht als neue Vokabel: das Wochenziel misst
+    // neu gelernte Woerter, und die Formangabe ist kein neues Wort.
+    verbucheAntwort(false);
+    setTimeout(naechsteFormenfrage, korrekt ? 900 : 2200);
+  }
 
   // --- Nova: Stundenpaket mit neuen Vokabeln ---
   // Drei Runden auf denselben sechs Wörtern: kennenlernen -> abfragen -> sichern.
@@ -988,6 +1103,7 @@
 
     dailyStats = loadDailyStats();
     weekStats = loadWeekStats();
+    ladeFormenFortschritt();
     document.getElementById('goalSelect').value = String(dailyStats.goal);
     document.getElementById('weekGoalSelect').value = String(weekStats.goal);
     renderDailyGoal();
