@@ -146,7 +146,8 @@
   const nomProgress  = ladeProgress("nomina-fortschritt");
 
   function auswertung(progress){
-    const stufen = Object.values(progress);
+    // Ein Eintrag ist eine blosse Stufe (Altbestand) oder [Stufe, Tag].
+    const stufen = Object.values(progress).map(v => Array.isArray(v) ? v[0] : v);
     return { geuebt: stufen.length, sicher: stufen.filter(s => s >= 3).length };
   }
 

@@ -540,10 +540,49 @@
 
   // Leitner-Gewichtung: rote Karten (Stufe 0) erscheinen am häufigsten, gelbe (1-2)
   // mittel, grüne (3-4) am seltensten -- aber nie ganz raus, damit Wissen auffrischt.
-  function stageWeight(stage){
-    if (stage === 0) return 6;
-    if (stage <= 2) return 3;
-    return 1;
+  //
+  // Dazu das Datum der letzten Antwort. Seine Aufgabe ist, frisch Geuebtes
+  // zurueckzustellen -- NICHT, Ueberfaelliges zu jagen. Das war der erste
+  // Entwurf und er ging nach hinten los: gegen Jahresende ist bei 1391 Woertern
+  // und zehn Karten am Tag ohnehin fast alles ueberfaellig, ein Bonus darauf
+  // zieht die gruenen Woerter nur noch weiter nach vorn. Durchgerechnet stieg
+  // ihr Anteil dadurch von 40 auf 48 Prozent.
+  //
+  // So herum wirkt es: nach einer fleissigen Woche steigt der Anteil roter
+  // Karten von 22 auf 37 Prozent, im Extremfall (alles heute geuebt) auf 58.
+  // Steht alles gleich lange still, traegt das Datum keine Auskunft und die
+  // Gewichtung ist wieder die alte -- ehrlicherweise laesst sich das nicht
+  // wegrechnen, es ist ein Kapazitaets- und kein Gewichtungsproblem.
+  //
+  // Nebenwirkung, die wir wollen: ein Wort, das gerade auf Stufe 2 gehoben
+  // wurde, ist zwei Tage zurueckgestellt. Es kann nicht mehr in derselben
+  // Stunde gruen werden -- die Stufe muss sich ueber echte Tage erarbeiten.
+  const FAELLIG = [1, 1, 2, 5, 14];   // Tage Ruhe je Stufe
+
+  function heuteTag(){ return Math.floor(Date.now() / 86400000); }
+
+  // Ein Eintrag ist entweder eine blosse Stufe (Altbestand) oder [Stufe, Tag].
+  // Beides muss gelesen werden koennen: bestehende Staende sollen nicht
+  // verfallen, nur weil wir das Format erweitert haben.
+  function stufeVon(wert){
+    if (Array.isArray(wert)) return wert[0] | 0;
+    return typeof wert === 'number' ? wert : 0;
+  }
+  function tagVon(wert){
+    return (Array.isArray(wert) && typeof wert[1] === 'number') ? wert[1] : null;
+  }
+
+  function stageWeight(stufe, tag){
+    if (stufe === 0) return 6;                        // rot: immer sofort wieder
+    const basis = stufe <= 2 ? 3 : 1;
+    if (typeof tag !== 'number') return basis;        // Altbestand ohne Datum
+    return (heuteTag() - tag) < FAELLIG[stufe] ? basis * 0.2 : basis;
+  }
+
+  // Stufe und Datum in einem Zug festhalten.
+  function merkeStufe(w){
+    w.tag = heuteTag();
+    progress[w.id] = [w.stage, w.tag];
   }
 
   function pickNext(){
@@ -557,10 +596,10 @@
       // Worst-of: einfache Rotation ohne Gewichtung, es sind ja schon die schlechtesten
       return candidates[Math.floor(Math.random() * candidates.length)];
     }
-    const totalWeight = candidates.reduce((sum, w) => sum + stageWeight(w.stage), 0);
+    const totalWeight = candidates.reduce((sum, w) => sum + stageWeight(w.stage, w.tag), 0);
     let r = Math.random() * totalWeight;
     for (const w of candidates){
-      r -= stageWeight(w.stage);
+      r -= stageWeight(w.stage, w.tag);
       if (r <= 0) return w;
     }
     return candidates[candidates.length - 1];
@@ -718,7 +757,7 @@
     });
     const warNeu = progress[currentWord.id] === undefined;
     currentWord.stage = korrekt ? Math.min(4, currentWord.stage + 1) : 0;
-    progress[currentWord.id] = currentWord.stage;
+    merkeStufe(currentWord);
     saveProgress(progress);
     verbucheAntwort(warNeu);
     renderStageBar();
@@ -740,7 +779,7 @@
     const warNeu = progress[currentWord.id] === undefined;
     if(delta === 0) currentWord.stage = 0;
     else currentWord.stage = Math.min(4, currentWord.stage + delta);
-    progress[currentWord.id] = currentWord.stage;
+    merkeStufe(currentWord);
     saveProgress(progress);
     verbucheAntwort(warNeu);
     lastWordId = currentWord.id;
@@ -797,7 +836,7 @@
         localStorage.removeItem(FORMEN_KEY);
         localStorage.removeItem(DAILY_KEY);
       } catch(err) {}
-      ALL_WORDS.forEach(w => { w.stage = 0; delete progress[w.id]; });
+      ALL_WORDS.forEach(w => { w.stage = 0; w.tag = null; delete progress[w.id]; });
       formenProgress = {};
       weekStats = loadWeekStats();
       dailyStats = loadDailyStats();
@@ -838,10 +877,11 @@
       return;
     }
     // Leitner-Gewichtung wie im Kartenmodus, nur auf den eigenen Stufen
-    const stufe = w => formenProgress[w.id] === undefined ? 0 : formenProgress[w.id];
-    const gesamt = pool.reduce((s, w) => s + stageWeight(stufe(w)), 0);
+    const stufe = w => stufeVon(formenProgress[w.id]);
+    const tag   = w => tagVon(formenProgress[w.id]);
+    const gesamt = pool.reduce((s, w) => s + stageWeight(stufe(w), tag(w)), 0);
     let r = Math.random() * gesamt, gewaehlt = pool[pool.length - 1];
-    for (const w of pool){ r -= stageWeight(stufe(w)); if (r <= 0){ gewaehlt = w; break; } }
+    for (const w of pool){ r -= stageWeight(stufe(w), tag(w)); if (r <= 0){ gewaehlt = w; break; } }
 
     formenWort = gewaehlt;
     formenFrage = Formangaben.fuer(gewaehlt);
@@ -881,8 +921,8 @@
     document.getElementById('formenLoesung').textContent =
       `${formenWort.lemma}, ${formenFrage.richtig}`;
 
-    const alt = formenProgress[formenWort.id] === undefined ? 0 : formenProgress[formenWort.id];
-    formenProgress[formenWort.id] = korrekt ? Math.min(4, alt + 1) : 0;
+    const alt = stufeVon(formenProgress[formenWort.id]);
+    formenProgress[formenWort.id] = [korrekt ? Math.min(4, alt + 1) : 0, heuteTag()];
     sichereFormenFortschritt();
     // Zaehlt als Wiederholung, nicht als neue Vokabel: das Wochenziel misst
     // neu gelernte Woerter, und die Formangabe ist kein neues Wort.
@@ -1072,7 +1112,7 @@
     if (!w) return;
     const warNeu = progress[w.id] === undefined;
     w.stage = (delta === 0) ? 0 : Math.min(4, (w.stage || 0) + delta);
-    progress[w.id] = w.stage;
+    merkeStufe(w);
     saveProgress(progress);
     verbucheAntwort(warNeu);
     renderStageBar();
@@ -1122,7 +1162,10 @@
       } catch(e) { return {}; }
     }
     progress = loadProgress();
-    ALL_WORDS.forEach(w => { if (progress[w.id] !== undefined) w.stage = progress[w.id]; });
+    ALL_WORDS.forEach(w => {
+      const e = progress[w.id];
+      if (e !== undefined){ w.stage = stufeVon(e); w.tag = tagVon(e); }
+    });
 
     dailyStats = loadDailyStats();
     weekStats = loadWeekStats();
