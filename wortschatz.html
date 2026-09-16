@@ -225,7 +225,7 @@
       </select>
     </div>
     <div class="daily-goal" id="dailyGoal">
-      <div class="daily-goal-text" id="dailyGoalText">Heute wiederholt: 0 / 10</div>
+      <div class="daily-goal-text" id="dailyGoalText">Heute geübt: 0 / 10</div>
       <div class="daily-goal-bar"><div class="daily-goal-fill" id="dailyGoalFill" style="width:0%"></div></div>
       <select id="goalSelect" title="Tagesziel anpassen">
         <option value="5">Ziel: 5/Tag</option>
@@ -422,13 +422,20 @@
   }
 
   // --- Ziele ---
-  // Zwei getrennte Zähler, die sich nicht überschneiden:
+  // Zwei getrennte Zähler, die sich nicht überschneiden. Es entscheidet nicht
+  // der Reiter, sondern ob das Wort zum ersten Mal drankommt:
   //   Wochenziel = Wörter, die zum allerersten Mal abgefragt werden (neue Vokabeln)
-  //   Tagesziel  = Karten von Wörtern, die schon bekannt sind (Wiederholung)
+  //   Tagesziel  = jede weitere geübte Karte
+  // Wer bucht was:
+  //   Karten, Multiple Choice   neues Wort -> Woche, sonst Tag
+  //   Formangaben               immer Tag (Stammformen sind kein neues Wort)
+  //   Nova 1 (Kennenlernen)     nichts, es wird keine Antwort gegeben
+  //   Nova 2 (Abfrage)          immer Tag
+  //   Nova 3 (Sicherung)        neues Wort -> Woche, sonst Tag
   const DAILY_KEY = "latein-arena-kursstufe-tagesstatistik";
   const WEEK_KEY  = "latein-arena-kursstufe-wochenstatistik";
   const GESAMT_KEY = "latein-arena-kursstufe-gesamt";   // lebenslang, wird nie zurueckgesetzt
-  const DAILY_DEFAULT = 10;   // Wiederholungen pro Tag
+  const DAILY_DEFAULT = 10;   // geuebte Karten pro Tag
   const WEEK_DEFAULT  = 24;   // neue Vokabeln pro Woche = 4 Wochenstunden a 6
   let dailyStats = { date: "", count: 0, goal: DAILY_DEFAULT };
   let weekStats  = { week: "", count: 0, goal: WEEK_DEFAULT };
@@ -480,7 +487,7 @@
     const box = document.getElementById('dailyGoal');
     box.classList.toggle('reached', dailyStats.count >= dailyStats.goal);
     document.getElementById('dailyGoalText').textContent =
-      (dailyStats.count >= dailyStats.goal ? '🎉 Tagesziel erreicht: ' : 'Heute wiederholt: ')
+      (dailyStats.count >= dailyStats.goal ? '🎉 Tagesziel erreicht: ' : 'Heute geübt: ')
       + `${dailyStats.count} / ${dailyStats.goal}`;
   }
   function renderWeekGoal(){
@@ -781,10 +788,20 @@
   document.getElementById('resetLink').addEventListener('click', (e) => {
     e.preventDefault();
     if (confirm('Wirklich den gesamten Lernfortschritt zurücksetzen?')) {
-      try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(WEEK_KEY); } catch(err) {}
+      // GESAMT_KEY bleibt absichtlich stehen: der lebenslange Zaehler misst,
+      // was jemand insgesamt geuebt hat, und das macht ein Reset nicht ungeschehen.
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(WEEK_KEY);
+        localStorage.removeItem(FORMEN_KEY);
+        localStorage.removeItem(DAILY_KEY);
+      } catch(err) {}
       ALL_WORDS.forEach(w => { w.stage = 0; delete progress[w.id]; });
+      formenProgress = {};
       weekStats = loadWeekStats();
+      dailyStats = loadDailyStats();
       renderWeekGoal();
+      renderDailyGoal();
       rebuildPool();
     }
   });
@@ -1016,6 +1033,11 @@
     });
     novaQueue.shift();
     if (!korrekt){ novaFehler++; novaQueue.push(wort); }   // Fehler kommen hinten nochmal dran
+    // Bewusst als Wiederholung gebucht, nicht als "neu": die Leitner-Stufe
+    // wird erst in Runde 3 gesetzt, progress[id] ist hier also noch
+    // undefiniert. Ein verbucheAntwort(warNeu) wuerde dasselbe Wort in
+    // Runde 2 und noch einmal in Runde 3 aufs Wochenziel rechnen.
+    verbucheAntwort(false);
     setTimeout(() => {
       if (novaQueue.length === 0) novaStarteRunde3();
       else novaRender2();
