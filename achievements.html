@@ -73,6 +73,15 @@
   .abgabe-btn.fertig{ background-image:none; background-color:var(--richtig); border-color:#1f4d27; }
   .abgabe-legende{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft);
     margin-top:12px; line-height:1.6; }
+  /* Sicherung: dieselbe Tafel wie die Abgabe, aber zwei Knoepfe. Der zweite
+     ist hell -- Laden ersetzt den Stand und soll nicht der naheliegende
+     Klick sein. */
+  .sicherung-knoepfe{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .abgabe-btn.hell{
+    background-image:none; background-color:var(--putz-hell);
+    color:var(--ink); border:2px solid var(--bronze);
+  }
+  .abgabe-btn.hell:hover{ background-color:var(--wand); filter:none; }
   .fusszeile{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft);
     margin-top:clamp(30px,5vh,48px); text-align:center; max-width:520px; line-height:1.7; }
 </style>
@@ -103,7 +112,18 @@
     </div>
   </div>
 
-  <p class="fusszeile">Der Fortschritt wird im Browser dieses Geräts gespeichert. Auf einem anderen Gerät oder nach dem Löschen der Browserdaten beginnt die Zählung neu.</p>
+
+  <div class="abgabe">
+    <div class="abgabe-titel">Fortschritt sichern</div>
+    <div class="abgabe-text">Dein Fortschritt liegt nur in diesem Browser. Sichere ihn als Datei, bevor du das Gerät wechselst oder die Browserdaten löschst — und lade sie auf dem neuen Gerät wieder.</div>
+    <div class="sicherung-knoepfe">
+      <button class="abgabe-btn" id="exportBtn">Datei sichern</button>
+      <button class="abgabe-btn hell" id="importBtn">Datei laden</button>
+      <input type="file" id="importDatei" accept="application/json,.json" hidden>
+    </div>
+    <div class="abgabe-legende" id="sicherungLegende">—</div>
+  </div>
+  <p class="fusszeile">Der Fortschritt wird im Browser dieses Geräts gespeichert. Auf einem anderen Gerät oder nach dem Löschen der Browserdaten beginnt die Zählung neu — es sei denn, du nimmst ihn als Datei mit.</p>
 
 <script src="fortschritt.js"></script>
 <script>
@@ -235,6 +255,144 @@
       knopf.textContent = "markiert – jetzt kopieren";
     }
     setTimeout(() => { knopf.textContent = "Zeile kopieren"; knopf.classList.remove('fertig'); }, 2500);
+  });
+
+  // --- Sicherung: Fortschritt als Datei ------------------------------------
+  // Der Fortschritt liegt im localStorage und haengt damit an Browser und
+  // Geraet. Zwischenablage scheidet als Weg aus: ein voller Kartenkasten sind
+  // rund 70 KB JSON, das laesst sich nicht sinnvoll einfuegen -- und die
+  // Berechtigung fehlt auf manchen Geraeten ohnehin. Also eine Datei.
+  //
+  // Gesichert werden die rohen Zeichenketten aus dem Speicher, nicht geparste
+  // Objekte. So muss diese Stelle die Form der einzelnen Schluessel nicht
+  // kennen und bleibt gueltig, wenn sich an ihnen etwas aendert.
+  const SICHER_TYP = "latein-arena-k1";
+  const SICHER_KEYS = [
+    "latein-arena-kursstufe-fortschritt",
+    "latein-arena-kursstufe-formen",
+    "latein-arena-kursstufe-tagesstatistik",
+    "latein-arena-kursstufe-wochenstatistik",
+    "latein-arena-kursstufe-gesamt",
+    "formentrainer-fortschritt",
+    "formentrainer-tagesstatistik",
+    "formentrainer-gesamt",
+    "nomina-fortschritt",
+    "nomina-tagesstatistik",
+    "nomina-gesamt"
+  ];
+
+  function melde(text){
+    document.getElementById('sicherungLegende').textContent = text;
+  }
+
+  // Anzahl der Eintraege in einer rohen Zeichenkette, 0 bei allem Unlesbaren.
+  function anzahlEintraege(roh){
+    if (typeof roh !== 'string') return 0;
+    try {
+      const o = JSON.parse(roh);
+      return (o && typeof o === 'object') ? Object.keys(o).length : 0;
+    } catch(e) { return 0; }
+  }
+
+  function lies(k){
+    try { return localStorage.getItem(k); } catch(e) { return null; }
+  }
+
+  // Die drei Zahlen, die eine Sicherung beschreiben.
+  function umfang(holen){
+    return {
+      voc:    anzahlEintraege(holen("latein-arena-kursstufe-fortschritt")),
+      formen: anzahlEintraege(holen("latein-arena-kursstufe-formen")),
+      verba:  anzahlEintraege(holen("formentrainer-fortschritt")),
+      nomina: anzahlEintraege(holen("nomina-fortschritt"))
+    };
+  }
+  function umfangText(u){
+    return `Vocābula ${u.voc} · Formangaben ${u.formen} · Verba ${u.verba} · Nōmina ${u.nomina}`;
+  }
+
+  melde("Gesichert wird: " + umfangText(umfang(lies)));
+
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    const daten = {};
+    SICHER_KEYS.forEach(k => {
+      const roh = lies(k);
+      if (roh !== null) daten[k] = roh;
+    });
+    if (Object.keys(daten).length === 0){
+      return melde("Es gibt noch nichts zu sichern — üb erst eine Runde.");
+    }
+    const heute = new Date();
+    const stempel = heute.getFullYear() + "-"
+      + String(heute.getMonth() + 1).padStart(2, "0") + "-"
+      + String(heute.getDate()).padStart(2, "0");
+    const inhalt = JSON.stringify({
+      typ: SICHER_TYP, version: 1, erstellt: heute.toISOString(), daten
+    });
+    const url = URL.createObjectURL(new Blob([inhalt], { type: "application/json" }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "latein-arena-k1-" + stempel + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    melde("Gesichert als latein-arena-k1-" + stempel + ".json — bewahre die Datei auf, wo du sie wiederfindest.");
+  });
+
+  document.getElementById('importBtn').addEventListener('click', () => {
+    document.getElementById('importDatei').click();
+  });
+
+  document.getElementById('importDatei').addEventListener('change', (e) => {
+    const datei = e.target.files && e.target.files[0];
+    e.target.value = "";           // dieselbe Datei soll erneut waehlbar sein
+    if (!datei) return;
+
+    const leser = new FileReader();
+    leser.onerror = () => melde("Die Datei ließ sich nicht lesen.");
+    leser.onload = () => {
+      let sicherung;
+      try { sicherung = JSON.parse(leser.result); }
+      catch(err){ return melde("Das ist keine gültige Sicherungsdatei."); }
+
+      if (!sicherung || sicherung.typ !== SICHER_TYP
+          || !sicherung.daten || typeof sicherung.daten !== 'object'){
+        return melde("Das ist keine Sicherung der Latein-Arena.");
+      }
+
+      // Nur bekannte Schluessel, und nur, was sich als JSON lesen laesst: eine
+      // fremde oder beschaedigte Datei soll den Speicher nicht mit Unsinn
+      // fuellen, den die Werkzeuge dann nicht mehr auswerten koennen.
+      const zuSchreiben = {};
+      SICHER_KEYS.forEach(k => {
+        const wert = sicherung.daten[k];
+        if (typeof wert !== 'string') return;
+        try { JSON.parse(wert); } catch(err){ return; }
+        zuSchreiben[k] = wert;
+      });
+      if (Object.keys(zuSchreiben).length === 0){
+        return melde("Die Datei enthält keinen lesbaren Fortschritt.");
+      }
+
+      // Vorher und nachher nebeneinander: der haeufigste Fehlgriff ist, eine
+      // alte Datei ueber einen neueren Stand zu spielen.
+      const jetzt = umfang(lies);
+      const neu = umfang(k => zuSchreiben[k] !== undefined ? zuSchreiben[k] : null);
+      const frage = "Gesicherten Stand einspielen?\n\n"
+        + "  jetzt:  " + umfangText(jetzt) + "\n"
+        + "  Datei:  " + umfangText(neu) + "\n\n"
+        + "Der Stand auf diesem Gerät wird ersetzt.";
+      if (!confirm(frage)) return melde("Abgebrochen — es wurde nichts geändert.");
+
+      try {
+        Object.keys(zuSchreiben).forEach(k => localStorage.setItem(k, zuSchreiben[k]));
+      } catch(err){
+        return melde("Schreiben fehlgeschlagen: " + err.message);
+      }
+      location.reload();
+    };
+    leser.readAsText(datei);
   });
 </script>
 </body>
