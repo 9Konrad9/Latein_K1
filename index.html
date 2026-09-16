@@ -71,6 +71,42 @@
     padding:10px 24px; border-radius:24px; box-shadow:var(--schatten);
   }
   .ehrentafel:hover .ehrentafel-knopf{ filter:brightness(1.14); }
+  /* Die Kurzanleitung steht bewusst unter den Kacheln: wer weiss, was er tut,
+     klickt oben und liest sie nie. Bronzerand statt Rot oder Gold -- sie ist
+     Beiwerk, kein Werkzeug und keine Auszeichnung. */
+  .anleitung{
+    width:100%; max-width:940px; margin-top:26px;
+    padding:20px clamp(18px,3vw,26px) 22px;
+    background:var(--putz) url('assets/ui/lampe.png') right 16px top 14px / 34px auto no-repeat;
+    border:var(--rand); border-top:5px solid var(--bronze); border-radius:10px;
+    box-shadow:var(--schatten);
+  }
+  .anleitung-titel{
+    font-family:var(--font-display); font-weight:700; font-size:20px;
+    letter-spacing:.04em; color:var(--pompeji); margin-bottom:14px; padding-right:48px;
+  }
+  .anleitung-schritte{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(232px, 1fr));
+    gap:16px clamp(18px,3vw,28px);
+    margin:0; padding:0; list-style:none; counter-reset:schritt;
+  }
+  .anleitung-schritte li{ counter-increment:schritt; position:relative; padding-left:38px; }
+  /* Die Ziffer sitzt im selben Porphyr wie der Knopf der Ehrentafel. */
+  .anleitung-schritte li::before{
+    content:counter(schritt); position:absolute; left:0; top:-1px;
+    width:27px; height:27px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-weight:700; font-size:14px;
+    color:var(--marmor); background-color:var(--pompeji);
+    background-image:url('assets/ui/porphyr.jpg'); background-size:90px auto;
+    border:1.5px solid #6d1f1f;
+  }
+  .anleitung-kopf{
+    font-family:var(--font-display); font-weight:700; font-size:16px;
+    color:var(--ink); letter-spacing:.02em; margin-bottom:2px;
+  }
+  .anleitung-text{ font-size:15px; line-height:1.5; color:var(--ink); }
+  .anleitung-text b{ color:var(--pompeji); font-weight:600; }
   .fusszeile{
     font-family:var(--font-mono); font-size:11px; color:var(--ink-soft);
     margin-top:clamp(28px,5vh,48px); text-align:center; max-width:560px; line-height:1.7;
@@ -118,6 +154,24 @@
 
   </div>
 
-  <p class="fusszeile">Der Lernfortschritt wird auf diesem Gerät im Browser gespeichert.</p>
+  <section class="anleitung">
+    <div class="anleitung-titel">So fängst du an</div>
+    <ol class="anleitung-schritte">
+      <li>
+        <div class="anleitung-kopf">Zu Stundenbeginn</div>
+        <div class="anleitung-text">In <b>Vocābula</b> den Reiter <b>Nova · Stundenpaket</b> öffnen: sechs neue Vokabeln in drei Runden. Viermal in der Woche sind das die 24 neuen Wörter des Wochenziels.</div>
+      </li>
+      <li>
+        <div class="anleitung-kopf">Zwischendurch</div>
+        <div class="anleitung-text">Zehn Karten in <b>Vocābula</b>, fünf Formen in <b>Verba</b>, fünf in <b>Nōmina</b>. Die Balken über den Karten zeigen, wie weit du bist.</div>
+      </li>
+      <li>
+        <div class="anleitung-kopf">Zum Abgeben</div>
+        <div class="anleitung-text">Unter <b>Errungenschaften</b> steht eine Zeile mit deinem Stand. Kopieren und in dein OneNote-Blatt einfügen.</div>
+      </li>
+    </ol>
+  </section>
+
+  <p class="fusszeile">Der Lernfortschritt wird in diesem Browser auf diesem Gerät gespeichert — üb deshalb möglichst immer auf demselben.</p>
 </body>
 </html>
