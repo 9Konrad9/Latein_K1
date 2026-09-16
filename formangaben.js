@@ -16,6 +16,14 @@ const Formangaben = (() => {
 
   const GEN_ENDUNGEN = ["ae", "ī", "is", "ūs", "ēī"];
 
+  // Klammerzusaetze sind Konstruktionshinweise, keine Formangaben:
+  // "(+Dat.)", "(Deponens)", "(kein PPP)", "(manus)". Sie werden
+  // abgetrennt, bevor zerlegt wird. Bleibt danach zu wenig uebrig, faellt
+  // das Wort ohnehin durch die uebrigen Pruefungen.
+  function ohneKlammern(gram){
+    return gram.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim();
+  }
+
   function mischen(a){
     const k = a.slice();
     for (let i = k.length - 1; i > 0; i--){
@@ -27,7 +35,7 @@ const Formangaben = (() => {
 
   // "accūsātōris, m." -> Genitiv und Genus
   function substantiv(gram){
-    const m = gram.trim().match(/^([^,]+),\s*(m|f|n)\.?$/);
+    const m = ohneKlammern(gram).match(/^([^,]+),\s*(m|f|n)\.?$/);
     if (!m) return null;
     const gen = m[1].trim(), genus = m[2];
     const endung = GEN_ENDUNGEN.find(e => gen.endsWith(e));
@@ -48,11 +56,10 @@ const Formangaben = (() => {
 
   // "mittō, mīsī, missum" -> die drei Stammformen
   function verb(gram){
-    const teile = gram.trim().split(",").map(t => t.trim()).filter(Boolean);
+    const teile = ohneKlammern(gram).split(",").map(t => t.trim()).filter(Boolean);
     if (teile.length !== 3) return null;
     const [p1, p2, p3] = teile;
     if (!/(ō|or)$/.test(p1)) return null;    // ohne erkennbare 1. Person nicht zerlegbar
-    if (/[()]/.test(gram)) return null;      // Klammerzusaetze bleiben aussen vor
     const stamm = p1.replace(/(iō|eō|ō)$/, "");
     if (!stamm) return null;
     const bau = (perf, sup) => [p1, perf, sup].join(", ");
