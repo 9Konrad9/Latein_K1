@@ -78,8 +78,9 @@
   }
   .face.front{ background:var(--marmor); border:26px solid transparent;
     border-image:url('assets/ui/marmor.png') 44 fill stretch; }
-  .face.back{ transform:rotateY(180deg); background:#f6ecd4; border:18px solid transparent;
-    border-image:url('assets/ui/pergament.png') 26 fill stretch; }
+  /* Rueckseite wie Vorderseite: beim Wenden bleibt es dieselbe Tafel. */
+  .face.back{ transform:rotateY(180deg); background:var(--marmor); border:26px solid transparent;
+    border-image:url('assets/ui/marmor.png') 44 fill stretch; }
   .latin-word{ font-family:var(--font-display); font-weight:700;
     font-size:clamp(24px,3.5vw,42px); letter-spacing:.02em; color:var(--ink); }
   .meta-tag{ font-family:var(--font-mono); font-size:10px; color:var(--ink-soft);

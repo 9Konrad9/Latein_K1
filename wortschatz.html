@@ -75,7 +75,8 @@
      anderes Verhaeltnis -- als flaechiges Hintergrundbild wuerde der Zierrand
      oben und unten dicker als an den Seiten. Deshalb border-image: der Rahmen
      wird geschnitten und nur die Mitte gedehnt.
-     Rueckseite: Pergament, passend zur Uebersetzung. */
+     Rueckseite: dieselbe Marmortafel, damit die Karte beim Wenden ein Stueck
+     Material bleibt und nicht das Traegermaterial wechselt. */
   .arena{ position:relative; width:clamp(320px, 58vw, 760px); height:clamp(230px, 40vh, 380px);
     perspective:1500px; margin-bottom:clamp(12px,3vh,20px); }
   .card{ position:absolute; inset:0; cursor:pointer; transform-style:preserve-3d;
@@ -100,9 +101,9 @@
   }
   .face.back{
     transform:rotateY(180deg);
-    background:#f6ecd4;
-    border:18px solid transparent;
-    border-image:url('assets/ui/pergament.png') 26 fill stretch;
+    background:var(--marmor);
+    border:26px solid transparent;
+    border-image:url('assets/ui/marmor.png') 44 fill stretch;
   }
   .latin-word{ font-family:var(--font-display); font-weight:700;
     font-size:clamp(26px,3.8vw,44px); letter-spacing:.02em; color:var(--ink); }
