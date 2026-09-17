@@ -110,15 +110,19 @@
   .meta-tag{ font-family:var(--font-mono); font-size:10px; color:var(--ink-soft);
     margin-top:10px; letter-spacing:.05em; text-transform:none; }
   /* Wortart bleibt ein leises Etikett in Versalien, die Grammatikangabe steht
-     daneben in normaler Schreibung und etwas kraeftiger -- sie ist der Teil,
-     den man sich merken soll. */
+     daneben in normaler Schreibung und deutlich groesser -- sie ist der Teil,
+     den man sich merken soll, und soll nicht neben dem Lemma verschwinden.
+     Vorher standen hier feste 12px: die wuchsen am Beamer nicht mit, waehrend
+     das Lemma darueber bis 44px klettert. Jetzt derselbe clamp-Mechanismus. */
   .meta-tag .meta-wa{ text-transform:uppercase; letter-spacing:.09em; opacity:.7; }
   .meta-tag .meta-gram{
-    margin-left:9px; padding-left:9px; border-left:1px solid var(--wand-tief);
-    font-size:12px; color:var(--ink); letter-spacing:.01em;
+    margin-left:10px; padding-left:10px; border-left:1px solid var(--wand-tief);
+    font-size:clamp(15px, 1.7vw, 21px); font-weight:600;
+    color:var(--ink); letter-spacing:.01em;
   }
-  .back-gram{ font-family:var(--font-mono); font-size:12px; color:var(--ink-soft);
-    letter-spacing:.02em; margin-bottom:8px; }
+  .back-gram{ font-family:var(--font-mono); font-size:clamp(15px, 1.7vw, 21px);
+    font-weight:500; color:var(--ink);
+    letter-spacing:.02em; margin-bottom:10px; }
   .back-bed{ font-size:clamp(18px,2.8vw,30px); line-height:1.35; color:var(--pompeji);
     font-weight:600; max-height:clamp(96px,24vh,200px); overflow-y:auto; }
   .back-kapitel{ font-family:var(--font-mono); font-size:10px; color:var(--ink-soft); margin-top:12px; }
@@ -131,8 +135,10 @@
     font-weight:600; margin-top:12px; }
   .formen-frage{ font-family:var(--font-body); font-style:italic; font-size:15px;
     color:var(--ink-soft); margin:0 0 12px; text-align:center; }
-  .formen-loesung{ font-family:var(--font-mono); font-size:12px; color:var(--ink-soft);
-    margin:0 0 12px; text-align:center; min-height:16px; }
+  /* Die aufgeloeste Antwort IST die Stammformenangabe -- entsprechend gross. */
+  .formen-loesung{ font-family:var(--font-mono); font-size:clamp(15px, 1.7vw, 20px);
+    font-weight:600; color:var(--ink);
+    margin:0 0 12px; text-align:center; min-height:20px; }
   .rate-prompt{ font-family:var(--font-body); font-style:italic; font-size:15px;
     color:var(--ink-soft); margin:0 0 10px; text-align:center; }
   .controls{ display:flex; gap:10px; margin-bottom:8px; flex-wrap:wrap; justify-content:center; }

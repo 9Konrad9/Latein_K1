@@ -83,7 +83,9 @@
     border-image:url('assets/ui/marmor.png') 44 fill stretch; }
   .latin-word{ font-family:var(--font-display); font-weight:700;
     font-size:clamp(24px,3.5vw,42px); letter-spacing:.02em; color:var(--ink); }
-  .meta-tag{ font-family:var(--font-mono); font-size:10px; color:var(--ink-soft);
+  /* Traegt hier die grammatische Kennzeichnung selbst, nicht bloss ein
+     Etikett: entsprechend groesser als die 10px anderswo. */
+  .meta-tag{ font-family:var(--font-mono); font-size:clamp(13px, 1.5vw, 17px); color:var(--ink);
     margin-top:10px; letter-spacing:.05em; }
   .back-bed{ font-size:clamp(17px,2.6vw,28px); line-height:1.35; color:var(--pompeji); font-weight:600; }
   .back-lemma{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); margin-top:10px; }
