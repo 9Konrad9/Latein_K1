@@ -54,6 +54,11 @@
   }
   .worst-btn:hover{ background:var(--putz-hell); }
   .worst-btn.active{ background:var(--falsch); color:var(--marmor); }
+  /* Der Fehlerkorb steht nur da, wenn etwas drin ist -- und dann gefuellt
+     statt als Umriss: er ist eine Aufforderung, kein Dauerzustand. */
+  .fehler-btn{ border-color:var(--pompeji); background:var(--pompeji); color:var(--marmor); }
+  .fehler-btn:hover{ background:#8a2727; }
+  .fehler-btn.active{ background:var(--putz); color:var(--pompeji); }
 
   /* ---------- Leitner-Stufen ----------
      Die Muenzen stehen fuer den Wert einer Karte: roh/bronze noch unsicher,
@@ -268,6 +273,7 @@
       <option value="zahlwoerter">Zahlwörter</option>
     </select>
     <button id="worstBtn" class="worst-btn">🔥 Worst-of-10</button>
+    <button id="fehlerBtn" class="worst-btn fehler-btn" style="display:none">🔴 Fehler wiederholen</button>
   </div>
 
   <div class="uebung-tabs">
@@ -598,8 +604,8 @@
       const filtered = pool.filter(w => w.id !== lastWordId);
       if (filtered.length > 0) candidates = filtered;
     }
-    if (worstMode){
-      // Worst-of: einfache Rotation ohne Gewichtung, es sind ja schon die schlechtesten
+    if (worstMode || fehlerModus){
+      // Worst-of und Fehlerkorb: einfache Rotation ohne Gewichtung, es sind ja
       return candidates[Math.floor(Math.random() * candidates.length)];
     }
     const totalWeight = candidates.reduce((sum, w) => sum + stageWeight(w.stage, w.tag), 0);
@@ -621,14 +627,83 @@
 
   function rebuildPool(){
     worstMode = false;
+    fehlerModus = false;
     document.getElementById('worstBtn').textContent = "🔥 Worst-of-10";
     document.getElementById('worstBtn').classList.remove('active');
     pool = filteredByUI();
     lastWordId = null;
     seenCount = 0;
+    renderFehlerKnopf();
     if (currentUebungsmodus === 'nova') novaStartBildschirm();
     else if (currentUebungsmodus === 'formen') naechsteFormenfrage();
     else showCard();
+  }
+
+  // --- Fehlerkorb ----------------------------------------------------------
+  // Was in dieser Sitzung falsch war, sammelt sich hier und laesst sich am
+  // Stueck wiederholen. Ein Wort verlaesst den Korb, sobald es einmal richtig
+  // beantwortet wurde.
+  //
+  // Nur fuer die laufende Sitzung: was liegen bleibt, faengt das Leitner-System
+  // ohnehin auf, und ein Korb, der ueber Tage anwaechst, wird irgendwann nur
+  // noch gemieden.
+  //
+  // In Karten zaehlt allein "nochmal" als Fehler. "Wackelig" ist eine
+  // Abstufung von Koennen, keine Luecke -- sonst fuellt sich der Korb bei zehn
+  // Karten am Tag schneller, als er sich leeren laesst.
+  //
+  // Formangaben bleibt aussen vor: jene Abfrage hat einen eigenen
+  // Leitner-Speicher, weil zu wissen, was ein Wort heisst, und zu wissen, wie
+  // es flektiert, zwei verschiedene Dinge sind. Beides in einen Korb zu werfen
+  // wuerde diese Trennung wieder einebnen.
+  let fehlerkorb = [];
+  let fehlerModus = false;
+
+  function korbHinzu(id){
+    if (fehlerkorb.indexOf(id) === -1) fehlerkorb.push(id);
+    renderFehlerKnopf();
+  }
+  function korbRaus(id){
+    const i = fehlerkorb.indexOf(id);
+    if (i === -1) return;
+    fehlerkorb.splice(i, 1);
+    if (fehlerModus) pool = pool.filter(w => w.id !== id);
+    renderFehlerKnopf();
+  }
+  function renderFehlerKnopf(){
+    const knopf = document.getElementById('fehlerBtn');
+    if (!knopf) return;
+    // Nur dort, wo nach der Bedeutung gefragt wird. Nova fuellt den Korb mit,
+    // fuehrt aber durch seinen eigenen Ablauf.
+    const passt = (currentUebungsmodus === 'karten' || currentUebungsmodus === 'mc');
+    knopf.style.display = (fehlerkorb.length > 0 && passt) ? '' : 'none';
+    knopf.textContent = fehlerModus
+      ? `← Zurück (noch ${fehlerkorb.length})`
+      : `🔴 Fehler wiederholen (${fehlerkorb.length})`;
+    knopf.classList.toggle('active', fehlerModus);
+  }
+
+  function betreteFehlerModus(){
+    const woerter = ALL_WORDS.filter(w => fehlerkorb.indexOf(w.id) !== -1);
+    if (woerter.length === 0) return;
+    worstMode = false;
+    document.getElementById('worstBtn').textContent = "🔥 Worst-of-10";
+    document.getElementById('worstBtn').classList.remove('active');
+    fehlerModus = true;
+    pool = woerter;
+    lastWordId = null;
+    seenCount = 0;
+    renderFehlerKnopf();
+    showCard();
+  }
+  function verlasseFehlerModus(geschafft){
+    rebuildPool();
+    if (geschafft) document.getElementById('counter').textContent = "Fehlerkorb leer — alles wiederholt ✓";
+  }
+  // Nach jeder Antwort: im Fehlermodus endet die Runde, sobald der Korb leer ist.
+  function naechsteKarte(){
+    if (fehlerModus && pool.length === 0){ verlasseFehlerModus(true); return; }
+    showCard();
   }
 
   function enterWorstMode(){
@@ -639,9 +714,11 @@
     }
     reviewed.sort((a, b) => a.stage - b.stage);
     pool = reviewed.slice(0, 10);
+    fehlerModus = false;
     worstMode = true;
     document.getElementById('worstBtn').textContent = "← Zurück zum normalen Modus";
     document.getElementById('worstBtn').classList.add('active');
+    renderFehlerKnopf();   // sonst bleibt dort "← Zurück" stehen
     lastWordId = null;
     seenCount = 0;
     showCard();
@@ -675,7 +752,9 @@
     }
     currentWord = pickNext();
     seenCount++;
-    document.getElementById('counter').textContent = worstMode
+    document.getElementById('counter').textContent = fehlerModus
+      ? `Fehler wiederholen · noch ${pool.length}`
+      : worstMode
       ? `Worst-of · ${seenCount}. Karte`
       : `${seenCount}. Karte · ${pool.length} Wörter im Pool`;
     renderStageBar();
@@ -770,10 +849,11 @@
     currentWord.stage = korrekt ? Math.min(4, currentWord.stage + 1) : 0;
     merkeStufe(currentWord);
     saveProgress(progress);
+    if (korrekt) korbRaus(currentWord.id); else korbHinzu(currentWord.id);
     verbucheAntwort(warNeu);
     renderStageBar();
     lastWordId = currentWord.id;
-    setTimeout(showCard, korrekt ? 650 : 1300);
+    setTimeout(naechsteKarte, korrekt ? 650 : 1300);
   }
 
   document.getElementById('card').addEventListener('click', () => {
@@ -792,9 +872,11 @@
     else currentWord.stage = Math.min(4, currentWord.stage + delta);
     merkeStufe(currentWord);
     saveProgress(progress);
+    // Nur "nochmal" ist eine Luecke; "wackelig" ist eine Abstufung von Koennen.
+    if (delta === 0) korbHinzu(currentWord.id); else korbRaus(currentWord.id);
     verbucheAntwort(warNeu);
     lastWordId = currentWord.id;
-    showCard();
+    naechsteKarte();
   }
 
   document.querySelectorAll('.modtab').forEach(tab => {
@@ -815,11 +897,11 @@
       document.getElementById('mcView').style.display = currentUebungsmodus === 'mc' ? 'block' : 'none';
       document.getElementById('novaView').style.display = currentUebungsmodus === 'nova' ? 'block' : 'none';
       document.getElementById('formenView').style.display = currentUebungsmodus === 'formen' ? 'block' : 'none';
-      // Worst-of passt nicht zum Stundenpaket -- dort geht es ja gerade um Unbekanntes.
       // Worst-of passt weder zum Stundenpaket noch zu den Formangaben --
       // beide richten sich nicht nach den Vokabel-Leitnerstufen.
       document.getElementById('worstBtn').style.display =
         (currentUebungsmodus === 'nova' || currentUebungsmodus === 'formen') ? 'none' : '';
+      renderFehlerKnopf();
       seenCount = 0;
       if (currentUebungsmodus === 'nova') novaStartBildschirm();
       else if (currentUebungsmodus === 'formen') naechsteFormenfrage();
@@ -834,6 +916,10 @@
   document.getElementById('worstBtn').addEventListener('click', () => {
     if (worstMode) rebuildPool();
     else enterWorstMode();
+  });
+  document.getElementById('fehlerBtn').addEventListener('click', () => {
+    if (fehlerModus) verlasseFehlerModus(false);
+    else betreteFehlerModus();
   });
 
   document.getElementById('resetLink').addEventListener('click', (e) => {
@@ -1085,6 +1171,7 @@
     });
     novaQueue.shift();
     if (!korrekt){ novaFehler++; novaQueue.push(wort); }   // Fehler kommen hinten nochmal dran
+    if (korrekt) korbRaus(wort.id); else korbHinzu(wort.id);
     // Bewusst als Wiederholung gebucht, nicht als "neu": die Leitner-Stufe
     // wird erst in Runde 3 gesetzt, progress[id] ist hier also noch
     // undefiniert. Ein verbucheAntwort(warNeu) wuerde dasselbe Wort in
@@ -1125,6 +1212,7 @@
     w.stage = (delta === 0) ? 0 : Math.min(4, (w.stage || 0) + delta);
     merkeStufe(w);
     saveProgress(progress);
+    if (delta === 0) korbHinzu(w.id); else korbRaus(w.id);
     verbucheAntwort(warNeu);
     renderStageBar();
     novaIndex++;
