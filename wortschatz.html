@@ -272,7 +272,7 @@
       <option value="fragewoerter">Fragewörter</option>
       <option value="zahlwoerter">Zahlwörter</option>
     </select>
-    <button id="worstBtn" class="worst-btn">🔥 Worst-of-10</button>
+    <button id="worstBtn" class="worst-btn">🔥 Dauerbrenner</button>
     <button id="fehlerBtn" class="worst-btn fehler-btn" style="display:none">🔴 Fehler wiederholen</button>
   </div>
 
@@ -545,6 +545,8 @@
   let currentWord = null;
   let lastWordId = null;
   let seenCount = 0;
+  // Heisst in der Oberflaeche "Dauerbrenner": die dauerhaften Sorgenkinder,
+  // im Unterschied zum Fehlerkorb mit den Fehlern der laufenden Sitzung.
   let worstMode = false;
   let progress = {};
   let currentUebungsmodus = "karten";
@@ -628,7 +630,7 @@
   function rebuildPool(){
     worstMode = false;
     fehlerModus = false;
-    document.getElementById('worstBtn').textContent = "🔥 Worst-of-10";
+    document.getElementById('worstBtn').textContent = "🔥 Dauerbrenner";
     document.getElementById('worstBtn').classList.remove('active');
     pool = filteredByUI();
     lastWordId = null;
@@ -687,7 +689,7 @@
     const woerter = ALL_WORDS.filter(w => fehlerkorb.indexOf(w.id) !== -1);
     if (woerter.length === 0) return;
     worstMode = false;
-    document.getElementById('worstBtn').textContent = "🔥 Worst-of-10";
+    document.getElementById('worstBtn').textContent = "🔥 Dauerbrenner";
     document.getElementById('worstBtn').classList.remove('active');
     fehlerModus = true;
     pool = woerter;
@@ -709,7 +711,7 @@
   function enterWorstMode(){
     const reviewed = filteredByUI().filter(w => progress[w.id] !== undefined);
     if (reviewed.length === 0){
-      alert("Für den aktuellen Filter gibt es noch keine geübten Wörter. Erst ein paar Karten bewerten, dann steht hier eine Worst-of-Liste bereit.");
+      alert("Für den aktuellen Filter gibt es noch keine geübten Wörter. Erst ein paar Karten bewerten, dann stehen hier die Dauerbrenner bereit.");
       return;
     }
     reviewed.sort((a, b) => a.stage - b.stage);
@@ -755,7 +757,7 @@
     document.getElementById('counter').textContent = fehlerModus
       ? `Fehler wiederholen · noch ${pool.length}`
       : worstMode
-      ? `Worst-of · ${seenCount}. Karte`
+      ? `Dauerbrenner · ${seenCount}. Karte`
       : `${seenCount}. Karte · ${pool.length} Wörter im Pool`;
     renderStageBar();
     if (currentUebungsmodus === "mc") renderMC();
