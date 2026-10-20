@@ -37,6 +37,17 @@
     cursor:pointer; transition:all .18s; user-select:none;
   }
   .modetab:hover{ background:var(--putz-hell); color:var(--ink); }
+  .blitz-leiste{ text-align:center; margin-bottom:16px; }
+  .blitz-text{ font-size:15px; line-height:1.5; color:var(--ink); max-width:460px;
+    margin:0 auto 8px; }
+  .blitz-bestwert{ font-family:var(--font-mono); font-size:13px; color:var(--ink-soft);
+    margin-bottom:14px; min-height:18px; }
+  .blitz-uhr{ font-family:var(--font-display); font-weight:700;
+    font-size:clamp(34px,5vw,52px); color:var(--pompeji); line-height:1.1; }
+  .blitz-punkte{ font-family:var(--font-mono); font-size:15px; color:var(--ink);
+    margin-top:2px; }
+  .blitz-ergebnis{ font-family:var(--font-display); font-weight:700;
+    font-size:clamp(19px,2.6vw,26px); color:var(--pompeji); margin-bottom:14px; }
   .modetab.active{
     background-color:var(--pompeji);
     background-image:url('assets/ui/porphyr.jpg'); background-size:260px auto;
@@ -195,6 +206,7 @@
     <div class="modetab active" data-mode="mc">Multiple Choice</div>
     <div class="modetab" data-mode="experte">Experten-Modus</div>
     <div class="modetab" data-mode="membra">Membra</div>
+    <div class="modetab" data-mode="blitz">⚡ Blitzrunde</div>
   </div>
 
   <div class="filterbar">
@@ -229,6 +241,22 @@
   <div class="counter" id="counter">1 Formen</div>
 
   <!-- Multiple Choice Modus -->
+  <div class="blitz-leiste" id="blitzLeiste" style="display:none">
+    <div id="blitzStart">
+      <div class="blitz-text">60 Sekunden, so viele Formen wie möglich. Zählt weder aufs Tagesziel noch auf die Leitner-Stufen — hier geht es ums Tempo.</div>
+      <div class="blitz-bestwert" id="blitzBestwert"></div>
+      <button class="knopf-haupt" id="blitzStartBtn">Blitzrunde starten</button>
+    </div>
+    <div id="blitzLauf" style="display:none">
+      <div class="blitz-uhr" id="blitzUhr">60</div>
+      <div class="blitz-punkte" id="blitzPunkte">0 richtig</div>
+    </div>
+    <div id="blitzEnde" style="display:none">
+      <div class="blitz-ergebnis" id="blitzErgebnis"></div>
+      <button class="knopf-haupt" id="blitzNochmalBtn">Nächste Runde</button>
+    </div>
+  </div>
+
   <div id="mcView">
     <div class="arena arena-kompakt">
       <div class="card no-flip" id="mcCard">
@@ -896,9 +924,61 @@
     }
     seenCount++;
     renderStageBar();
-    if (currentMode === "mc") renderMC();
+    if (currentMode === "mc" || currentMode === "blitz") renderMC();
     else if (currentMode === "membra") renderMembra();
     else renderExperte();
+  }
+
+
+  // --- Blitzrunde -----------------------------------------------------------
+  // 60 Sekunden, so viele Formen wie moeglich. Sie zaehlt bewusst WEDER auf das
+  // Tagesziel NOCH auf die Leitner-Stufen: sonst waere das Tagesziel mit einer
+  // Minute erledigt und die Stufen voller Rateantworten unter Zeitdruck. Der
+  // lebenslange Zaehler laeuft mit -- geuebt ist geuebt. Ihr Lohn ist der
+  // Bestwert.
+  const BLITZ_KEY = "formentrainer-blitz";
+  const BLITZ_DAUER = 60;
+  let blitzLaeuft = false, blitzPunkte = 0, blitzRest = 0, blitzUhrId = null;
+
+  function blitzBestwert(){
+    try { return parseInt(localStorage.getItem(BLITZ_KEY), 10) || 0; } catch(e){ return 0; }
+  }
+  function blitzAnsicht(welche){
+    document.getElementById('blitzStart').style.display = welche === 'start' ? '' : 'none';
+    document.getElementById('blitzLauf').style.display  = welche === 'lauf'  ? '' : 'none';
+    document.getElementById('blitzEnde').style.display  = welche === 'ende'  ? '' : 'none';
+    document.getElementById('mcOptions').style.visibility = welche === 'lauf' ? '' : 'hidden';
+    document.getElementById('mcCard').style.visibility = welche === 'lauf' ? '' : 'hidden';
+  }
+  function blitzStartBildschirm(){
+    blitzLaeuft = false;
+    if (blitzUhrId){ clearInterval(blitzUhrId); blitzUhrId = null; }
+    const b = blitzBestwert();
+    document.getElementById('blitzBestwert').textContent = b ? ('Bestwert: ' + b + ' richtig') : '';
+    blitzAnsicht('start');
+  }
+  function blitzStarten(){
+    blitzLaeuft = true; blitzPunkte = 0; blitzRest = BLITZ_DAUER;
+    document.getElementById('blitzUhr').textContent = blitzRest;
+    document.getElementById('blitzPunkte').textContent = '0 richtig';
+    blitzAnsicht('lauf');
+    nextItem();
+    blitzUhrId = setInterval(() => {
+      blitzRest--;
+      document.getElementById('blitzUhr').textContent = blitzRest;
+      if (blitzRest <= 0) blitzSchluss();
+    }, 1000);
+  }
+  function blitzSchluss(){
+    blitzLaeuft = false;
+    if (blitzUhrId){ clearInterval(blitzUhrId); blitzUhrId = null; }
+    const alt = blitzBestwert();
+    const bestwert = blitzPunkte > alt;
+    if (bestwert){ try { localStorage.setItem(BLITZ_KEY, String(blitzPunkte)); } catch(e){} }
+    document.getElementById('blitzErgebnis').textContent =
+      blitzPunkte + ' richtig in ' + BLITZ_DAUER + ' Sekunden'
+      + (bestwert ? ' — neuer Bestwert!' : (alt ? ' · Bestwert: ' + alt : ''));
+    blitzAnsicht('ende');
   }
 
   function renderMC(){
@@ -925,6 +1005,14 @@
       if (b.textContent === currentItem.bestimmung) b.classList.add('correct');
       else if (b === btn && !correct) b.classList.add('wrong');
     });
+    if (blitzLaeuft){
+      if (correct) blitzPunkte++;
+      document.getElementById('blitzPunkte').textContent = blitzPunkte + ' richtig';
+      Gesamtzaehler.zaehl(GESAMT_KEY);   // geuebt ist geuebt
+      lastItemId = currentItem.id;
+      setTimeout(() => { if (blitzLaeuft) nextItem(); }, correct ? 260 : 650);
+      return;
+    }
     currentItem.stage = correct ? Math.min(4, currentItem.stage + 1) : 0;
     progress[currentItem.id] = currentItem.stage;
     saveProgress();
@@ -1145,6 +1233,13 @@
       document.getElementById('mcView').style.display = currentMode === 'mc' ? 'block' : 'none';
       document.getElementById('expView').style.display = currentMode === 'experte' ? 'block' : 'none';
       document.getElementById('membraView').style.display = currentMode === 'membra' ? 'block' : 'none';
+      document.getElementById('mcView').style.display = (currentMode === 'mc' || currentMode === 'blitz') ? 'block' : 'none';
+      document.getElementById('blitzLeiste').style.display = currentMode === 'blitz' ? '' : 'none';
+      if (currentMode === 'blitz'){ blitzStartBildschirm(); return; }
+      blitzLaeuft = false;
+      if (blitzUhrId){ clearInterval(blitzUhrId); blitzUhrId = null; }
+      document.getElementById('mcOptions').style.visibility = '';
+      document.getElementById('mcCard').style.visibility = '';
       nextItem();
     });
   });
@@ -1174,6 +1269,8 @@
 
   loadData();
 
+  document.getElementById('blitzStartBtn').addEventListener('click', blitzStarten);
+  document.getElementById('blitzNochmalBtn').addEventListener('click', blitzStarten);
   Tasten.start();
 </script>
 </body>
