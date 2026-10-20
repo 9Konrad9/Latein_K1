@@ -619,9 +619,28 @@
     return candidates[candidates.length - 1];
   }
 
+  // Ein Wort gehoert zu einem Modul, wenn es von dort STAMMT (typ) oder wenn es
+  // dieser Lektuere ZUGEORDNET ist (listen). Das sind zwei verschiedene Dinge:
+  // consul stammt aus dem Grundwortschatz, wird aber fuer In Verrem gebraucht.
+  //
+  // Vorher leistete typ beides auf einmal. Weil es nur einen Wert hat, erzwang
+  // es eine Entscheidung, die sachlich falsch ist: entweder fehlte das Wort in
+  // der Lektuereliste, oder es stand doppelt da und wurde mit zwei getrennten
+  // Leitner-Stufen gelernt. Gemessen fehlten im Cicero-Modul gut die Haelfte
+  // der Verres-Woerter.
+  //
+  // Die Regel dahinter: gleiche Bedeutung -> ein Eintrag in zwei Listen;
+  // andere Bedeutung -> zwei Eintraege. Deshalb bleiben die Ovid- und
+  // Seneca-Doppelungen bestehen, wo der Autoreneintrag eine eigene Nuance
+  // traegt (virtus heisst bei Seneca etwas anderes).
+  function gehoertZu(w, modul){
+    if (w.typ === modul) return true;
+    return Array.isArray(w.listen) && w.listen.indexOf(modul) !== -1;
+  }
+
   function filteredByUI(){
     return ALL_WORDS.filter(w => {
-      if (w.typ !== currentMod) return false;
+      if (!gehoertZu(w, currentMod)) return false;
       if (currentWa !== "alle" && w.waGroup !== currentWa) return false;
       return true;
     });
@@ -1043,6 +1062,9 @@
   // Modul und welcher Wortart-Filter gerade eingestellt ist. Das hält die Stundenroutine
   // vorhersagbar; Cicero und Ovid sind Zusatzmodule für die Lektürephasen.
   function novaGrundwortschatz(){
+    // Bewusst typ und nicht gehoertZu: Nova zieht aus der Herkunft
+    // Grundwortschatz. Ein Wort, das zusaetzlich einer Lektuere zugeordnet
+    // ist, bleibt ein Grundwortschatzwort und gehoert weiter ins Paket.
     return ALL_WORDS.filter(w => w.typ === 'grundwortschatz');
   }
   function unbekannteWoerter(){
@@ -1277,7 +1299,7 @@
     renderWeekGoal();
 
     document.getElementById('totalCount').textContent =
-      `${ALL_WORDS.filter(w=>w.typ==='grundwortschatz').length} Grundwortschatz · ${ALL_WORDS.filter(w=>w.typ==='autor_cicero').length} Cicero · ${ALL_WORDS.filter(w=>w.typ==='autor_ovid').length} Ovid · ${ALL_WORDS.filter(w=>w.typ==='autor_seneca').length} Seneca`;
+      `${ALL_WORDS.filter(w=>gehoertZu(w,'grundwortschatz')).length} Grundwortschatz · ${ALL_WORDS.filter(w=>gehoertZu(w,'autor_cicero')).length} Cicero · ${ALL_WORDS.filter(w=>gehoertZu(w,'autor_ovid')).length} Ovid · ${ALL_WORDS.filter(w=>gehoertZu(w,'autor_seneca')).length} Seneca`;
 
     rebuildPool();
   }
