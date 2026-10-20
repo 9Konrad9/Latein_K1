@@ -186,6 +186,7 @@
       <option value="30">Ziel: 30/Tag</option>
     </select>
   </div>
+    <div class="serie-chip" id="serieChip" style="display:none"></div>
     </div>
     <div class="ziel-rolle rechts"></div>
   </div>
@@ -286,6 +287,7 @@
   </div>
 
 <script src="fortschritt.js"></script>
+<script src="serie.js"></script>
 <script>
   let VERBEN_ALLE = { regelmaessig: [], unregelmaessig: [] };
 
@@ -734,11 +736,24 @@
   function saveDailyStats(){
     try { localStorage.setItem(DAILY_KEY, JSON.stringify(dailyStats)); } catch(e) {}
   }
+  // Die Serie erscheint nur, wenn es eine gibt. Eine Null daneben waere eine
+  // Mahnung, keine Belohnung.
+  function renderSerie(){
+    const chip = document.getElementById('serieChip');
+    if (!chip || typeof Serie === "undefined") return;
+    const s = Serie.stand();
+    if (s.laenge === 0){ chip.style.display = 'none'; return; }
+    chip.style.display = '';
+    chip.textContent = '🔥 ' + s.laenge + (s.laenge === 1 ? ' Tag' : ' Tage') + ' in Folge'
+      + (s.bester > s.laenge ? ' · Bestwert ' + s.bester : '');
+  }
+
   function renderDailyGoal(){
     const pct = Math.min(100, Math.round((dailyStats.count / dailyStats.goal) * 100));
     document.getElementById('dailyGoalFill').style.width = pct + '%';
     const box = document.getElementById('dailyGoal');
-    if (dailyStats.count >= dailyStats.goal){
+    const erreicht = dailyStats.count >= dailyStats.goal;
+    if (erreicht){
       box.classList.add('reached');
       document.getElementById('dailyGoalText').textContent =
         `🎉 Tagesziel erreicht: ${dailyStats.count} / ${dailyStats.goal} Formen`;
@@ -747,6 +762,8 @@
       document.getElementById('dailyGoalText').textContent =
         `Heute: ${dailyStats.count} / ${dailyStats.goal} Formen`;
     }
+    if (erreicht && typeof Serie !== "undefined") Serie.melde();
+    renderSerie();
   }
   document.getElementById('goalSelect').addEventListener('change', (e) => {
     dailyStats.goal = parseInt(e.target.value, 10);

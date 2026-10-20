@@ -126,6 +126,7 @@
   <p class="fusszeile">Der Fortschritt wird im Browser dieses Geräts gespeichert. Auf einem anderen Gerät oder nach dem Löschen der Browserdaten beginnt die Zählung neu — es sei denn, du nimmst ihn als Datei mit.</p>
 
 <script src="fortschritt.js"></script>
+<script src="serie.js"></script>
 <script>
   const TIERS = [
     {name:"Bronze",  key:"bronze",  bild:"assets/achievements/badge_bronze.png"},
@@ -151,6 +152,8 @@
     return { geuebt: stufen.length, sicher: stufen.filter(s => s >= 3).length };
   }
 
+  const serieStand = (typeof Serie !== "undefined") ? Serie.stand() : { laenge:0, bester:0 };
+
   const vAusw = auswertung(vocProgress);
   const fAusw = auswertung(formProgress);
   const nAusw = auswertung(nomProgress);
@@ -162,6 +165,12 @@
     { titel:"Verba — Sicherheit", beschreibung:"Verbformen auf Stufe „sicher“ gebracht", wert: fAusw.sicher, schwellen:{bronze:10, silber:50, gold:150, diamant:400} },
     { titel:"Nōmina — Umfang", beschreibung:"Verschiedene Nominalformen bestimmt", wert: nAusw.geuebt, schwellen:{bronze:10, silber:50, gold:150, diamant:400} },
     { titel:"Nōmina — Sicherheit", beschreibung:"Nominalformen auf Stufe „sicher“ gebracht", wert: nAusw.sicher, schwellen:{bronze:10, silber:50, gold:150, diamant:400} },
+    // Die einzige Kategorie, die nicht Menge misst, sondern Regelmäßigkeit.
+    // Zehn Minuten an fünf Tagen sind mehr wert als eine Stunde am Sonntag.
+    { titel:"Beständigkeit", beschreibung: serieStand.bester > serieStand.laenge
+        ? `Tage in Folge mit erreichtem Tagesziel — Bestwert: ${serieStand.bester}`
+        : "Tage in Folge mit erreichtem Tagesziel",
+      wert: serieStand.laenge, schwellen:{bronze:3, silber:7, gold:14, diamant:30} },
   ];
 
   const grid = document.getElementById('grid');
@@ -229,8 +238,9 @@
     ];
     const karten = g.reduce((s, x) => s + x.karten, 0);
 
+    const serie = serieStand.laenge > 0 ? ` · Serie ${serieStand.laenge}` : '';
     return `KW ${isoWoche(heute)} · ${datum} · neu ${woche.count}/${woche.goal}${zielErreicht}`
-         + ` · gespielt ${karten}`
+         + serie + ` · gespielt ${karten}`
          + ` · Vocābula ${vAusw.geuebt}/${vAusw.sicher}`
          + ` · Verba ${fAusw.geuebt}/${fAusw.sicher}`
          + ` · Nōmina ${nAusw.geuebt}/${nAusw.sicher}`;

@@ -264,6 +264,16 @@ button:disabled { cursor: default; transform: none; }
     text-align: left; line-height: 1.6; color: var(--ink);
 }
 
+/* Die Tagesserie sitzt unter den Zielbalken auf der Schriftrolle. Sie
+   erscheint nur, wenn es eine gibt -- eine Null daneben waere eine
+   Mahnung, keine Belohnung. */
+.serie-chip {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: .03em;
+    color: var(--ink); background: rgba(155, 44, 44, .09);
+    border: 1px solid var(--bronze); border-radius: 14px;
+    padding: 4px 13px; margin-top: 2px;
+}
+
 /* ---------- Reiter ---------- */
 .reiter {
     font-family: var(--font-mono); font-size: 12px;
