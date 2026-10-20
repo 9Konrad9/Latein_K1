@@ -764,7 +764,69 @@
     nextItem();
   }
 
+  // --- Leitner-Wiedervorlage ------------------------------------------------
+  // Bis hierher war die Stufe blosse Statistik: gespeichert, als Muenzen
+  // angezeigt -- aber nie fuer die Auswahl benutzt. Die Leiste behauptete
+  // damit ein System, das nicht arbeitete.
+  //
+  // Anders als in Vocabula gibt es hier keinen Pool zum Gewichten: die Formen
+  // werden live erzeugt, der Kombinationsraum umfasst rund 40.000 Aufgaben.
+  // Eine bestimmte schwache Aufgabe zufaellig wieder zu treffen ist aussichts-
+  // los. Stattdessen wird sie aus ihrer ID wiederhergestellt.
+  function ausAufgabenId(id){
+    const t = id.split('_');
+    if (t.length < 4) return null;
+    const genus = t.pop();
+    const personIdx = parseInt(t.pop(), 10);
+    const tm = t.slice(-2).join('_');        // jeder Tempus-Modus hat genau einen Unterstrich
+    const lemma = t.slice(0, -2).join('_');  // kein Lemma enthaelt einen
+    if (TEMPUS_MODI.indexOf(tm) === -1) return null;
+    if (!(personIdx >= 0 && personIdx <= 5)) return null;
+    const verb = VERBEN_ALLE.regelmaessig.find(v => v.lemma === lemma)
+              || VERBEN_ALLE.unregelmaessig.find(v => v.lemma === lemma);
+    if (!verb) return null;
+    // Was die Oberflaeche gerade ausblendet, darf auch die Wiedervorlage nicht
+    // hereinholen.
+    if (currentGenus !== "alle" && currentGenus !== genus) return null;
+    const istRegelmaessig = verb.klasse !== undefined;
+    if (currentParadigma === "unregelmäßig" && istRegelmaessig) return null;
+    if (currentParadigma !== "alle" && currentParadigma !== "unregelmäßig"
+        && verb.klasse !== REV_KLASSE_LABEL[currentParadigma]) return null;
+    const res = istRegelmaessig
+      ? generiereForm(verb, tm, personIdx, genus)
+      : generiereUnregelmaessigeForm(verb, tm, personIdx, genus);
+    if (!res) return null;
+    return {
+      id, lemma: verb.lemma, bedeutung: verb.bedeutung,
+      paradigma: istRegelmaessig ? KLASSE_LABEL[verb.klasse] : "unregelmäßig",
+      form: res.form, bestimmung: res.bestimmung, bausteine: res.teile,
+      kategorie: {genus}, typ: "finit"
+    };
+  }
+
+  function schwacheAufgabe(){
+    const schwach = Object.keys(progress).filter(id => progress[id] <= 2 && id !== lastItemId);
+    if (schwach.length === 0) return null;
+    // Je mehr Schwachstellen, desto haeufiger die Wiedervorlage -- aber nie so
+    // oft, dass zwei, drei Aufgaben totgeritten werden.
+    if (Math.random() > Math.min(0.4, schwach.length / 20)) return null;
+    const rot = schwach.filter(id => progress[id] === 0);
+    const topf = (rot.length && Math.random() < 0.7) ? rot : schwach;
+    for (let i = 0; i < 8; i++){
+      const item = ausAufgabenId(topf[Math.floor(Math.random() * topf.length)]);
+      if (item) return item;
+    }
+    return null;
+  }
+
   function pickNext(){
+    // Zuerst sehen, ob eine schwache Aufgabe zur Wiedervorlage ansteht.
+    const wieder = schwacheAufgabe();
+    if (wieder && (currentMode !== "membra"
+                   || (wieder.bausteine && wieder.bausteine.length >= 2))){
+      wieder.stage = progress[wieder.id] !== undefined ? progress[wieder.id] : 0;
+      return wieder;
+    }
     let versuch = 0, item = null;
     while (versuch < 10){
       item = zufallsItem();

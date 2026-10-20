@@ -374,9 +374,55 @@
     return rest.slice(0, anzahl);
   }
 
+  // --- Leitner-Wiedervorlage ------------------------------------------------
+  // Bis hierher war die Stufe blosse Statistik: gespeichert, als Muenzen
+  // angezeigt -- aber nie fuer die Auswahl benutzt. Die Leiste behauptete
+  // damit ein System, das nicht arbeitete.
+  //
+  // Wie in Verba werden die Formen live erzeugt; eine bestimmte schwache
+  // Aufgabe zufaellig wieder zu treffen ist aussichtslos. Sie wird deshalb aus
+  // ihrer ID wiederhergestellt -- hier einfacher, weil die Teile mit einem
+  // senkrechten Strich getrennt sind.
+  function ausAufgabenId(id){
+    const t = id.split("|");
+    if (t.length !== 4) return null;
+    const [lemma, genus, form, numerusFilter] = t;
+    // Die ID haelt den damals eingestellten Numerusfilter fest. Steht er heute
+    // anders, passt die Aufgabe nicht mehr zur Oberflaeche.
+    if (numerusFilter !== currentNumerus) return null;
+    const treffer = pool().find(x => x.e.lemma === lemma);
+    if (!treffer) return null;
+    const alle = bestimmungenFuer(treffer.e, form, genus)
+      .filter(b => currentNumerus === "alle" || b.numerus === currentNumerus);
+    if (!alle.length) return null;
+    return {
+      id, eintrag: treffer.e, adj: treffer.adj, genus, form, alle,
+      klasseLabel: KLASSE_LABEL[treffer.e.klasse]
+                   || (treffer.e.paradigma ? "unregelmäßig" : treffer.e.klasse)
+    };
+  }
+
+  function schwacheAufgabe(){
+    const schwach = Object.keys(progress).filter(id => progress[id] <= 2 && id !== lastItemId);
+    if (schwach.length === 0) return null;
+    // Je mehr Schwachstellen, desto haeufiger die Wiedervorlage -- aber nie so
+    // oft, dass zwei, drei Aufgaben totgeritten werden.
+    if (Math.random() > Math.min(0.4, schwach.length / 20)) return null;
+    const rot = schwach.filter(id => progress[id] === 0);
+    const topf = (rot.length && Math.random() < 0.7) ? rot : schwach;
+    for (let i = 0; i < 8; i++){
+      const item = ausAufgabenId(topf[Math.floor(Math.random() * topf.length)]);
+      if (item) return item;
+    }
+    return null;
+  }
+
   function naechstesItem(){
-    let item = null;
-    for (let i = 0; i < 12; i++){ item = zufallsItem(); if (item && item.id !== lastItemId) break; }
+    // Zuerst sehen, ob eine schwache Aufgabe zur Wiedervorlage ansteht.
+    let item = schwacheAufgabe();
+    if (!item){
+      for (let i = 0; i < 12; i++){ item = zufallsItem(); if (item && item.id !== lastItemId) break; }
+    }
     currentItem = item;
     if (!currentItem){
       document.getElementById('mcForm').textContent = "— keine Formen für diese Filterkombination —";
