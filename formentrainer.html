@@ -981,9 +981,19 @@
     blitzAnsicht('ende');
   }
 
+  // Die Stammformen gehoeren auf die Karte: sie sind das, was man sich bei
+  // einem Verb merkt. Bisher stand dort nur das Paradigma -- die Angabe, die
+  // man aus der Form ohnehin ablesen soll.
+  function verbKopf(item){
+    const v = VERBEN_ALLE.regelmaessig.find(x => x.lemma === item.lemma)
+           || VERBEN_ALLE.unregelmaessig.find(x => x.lemma === item.lemma);
+    const sf = v && v.stammformen ? v.stammformen : null;
+    return sf ? `${sf} · ${item.paradigma}` : `${item.lemma} · ${item.paradigma}`;
+  }
+
   function renderMC(){
     document.getElementById('mcForm').textContent = currentItem.form;
-    document.getElementById('mcLemma').textContent = `${currentItem.lemma} · ${currentItem.paradigma}`;
+    document.getElementById('mcLemma').textContent = verbKopf(currentItem);
     const options = buildDistractors(currentItem);
     options.push(currentItem.bestimmung);
     options.sort(() => Math.random()-0.5);
@@ -1027,7 +1037,7 @@
 
   function renderExperte(){
     document.getElementById('expForm').textContent = currentItem.form;
-    document.getElementById('expLemma').textContent = `${currentItem.lemma} · ${currentItem.paradigma}`;
+    document.getElementById('expLemma').textContent = verbKopf(currentItem);
     document.getElementById('expBestimmung').textContent = currentItem.bestimmung;
     if (currentItem.bausteine && currentItem.bausteine.length){
       document.getElementById('expBausteine').textContent =
@@ -1089,7 +1099,7 @@
 
   function renderMembra(){
     document.getElementById('membraForm').textContent = currentItem.form;
-    document.getElementById('membraLemma').textContent = `${currentItem.lemma} · ${currentItem.paradigma} · ${currentItem.bestimmung}`;
+    document.getElementById('membraLemma').textContent = `${verbKopf(currentItem)} · ${currentItem.bestimmung}`;
 
     const teile = (currentItem.bausteine && currentItem.bausteine.length) ? currentItem.bausteine : null;
     if (!teile){
